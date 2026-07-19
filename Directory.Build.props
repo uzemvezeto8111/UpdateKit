@@ -11,6 +11,6 @@
     <Company>UpdateKit contributors</Company>
     <Copyright>Copyright © 2026 UpdateKit contributors</Copyright>
     <NeutralLanguage>en</NeutralLanguage>
-    <VersionPrefix>1.0.0</VersionPrefix>
+    <VersionPrefix>0.1.0</VersionPrefix>
   </PropertyGroup>
 </Project>
