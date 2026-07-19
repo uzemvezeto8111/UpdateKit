@@ -4,6 +4,8 @@ using System.Numerics;
 
 namespace UpdateKit;
 
+/// <summary>Represents and compares a Semantic Versioning 2.0.0 value.</summary>
+/// <remarks>Build metadata is retained for display but does not affect equality or precedence.</remarks>
 public sealed class SemanticVersion : IComparable<SemanticVersion>, IEquatable<SemanticVersion>
 {
     private readonly string[] _prereleaseIdentifiers;
@@ -23,21 +25,29 @@ public sealed class SemanticVersion : IComparable<SemanticVersion>, IEquatable<S
         _prereleaseIdentifiers = prerelease?.Split('.') ?? [];
     }
 
+    /// <summary>Gets the arbitrary-precision major component.</summary>
     public BigInteger Major { get; }
 
+    /// <summary>Gets the arbitrary-precision minor component.</summary>
     public BigInteger Minor { get; }
 
+    /// <summary>Gets the arbitrary-precision patch component.</summary>
     public BigInteger Patch { get; }
 
+    /// <summary>Gets the prerelease identifiers without the leading hyphen.</summary>
     public string? Prerelease { get; }
 
+    /// <summary>Gets the build metadata without the leading plus sign.</summary>
     public string? BuildMetadata { get; }
 
+    /// <summary>Gets whether this version contains prerelease identifiers.</summary>
     public bool IsPrerelease => Prerelease is not null;
 
+    /// <summary>Parses a SemVer tag with an optional lowercase <c>v</c> prefix.</summary>
     public static UpdateResult<SemanticVersion> ParseTag(string? tag) =>
         SemanticVersionParser.ParseTag(tag);
 
+    /// <summary>Attempts to parse a SemVer tag with an optional lowercase <c>v</c> prefix.</summary>
     public static bool TryParseTag(
         string? tag,
         [NotNullWhen(true)] out SemanticVersion? version)
@@ -47,6 +57,7 @@ public sealed class SemanticVersion : IComparable<SemanticVersion>, IEquatable<S
         return result.IsSuccess;
     }
 
+    /// <inheritdoc />
     public int CompareTo(SemanticVersion? other)
     {
         if (other is null)
@@ -75,12 +86,15 @@ public sealed class SemanticVersion : IComparable<SemanticVersion>, IEquatable<S
         return ComparePrereleaseIdentifiers(_prereleaseIdentifiers, other._prereleaseIdentifiers);
     }
 
+    /// <inheritdoc />
     public bool Equals(SemanticVersion? other) =>
         ReferenceEquals(this, other) || other is not null && CompareTo(other) == 0;
 
+    /// <inheritdoc />
     public override bool Equals(object? obj) =>
         obj is SemanticVersion other && Equals(other);
 
+    /// <inheritdoc />
     public override int GetHashCode()
     {
         var hash = new HashCode();
@@ -96,6 +110,7 @@ public sealed class SemanticVersion : IComparable<SemanticVersion>, IEquatable<S
         return hash.ToHashCode();
     }
 
+    /// <summary>Returns the normalized version without a tag prefix.</summary>
     public override string ToString()
     {
         var normalized = string.Create(

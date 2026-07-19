@@ -2,24 +2,34 @@ using System.Collections.ObjectModel;
 
 namespace UpdateKit;
 
+/// <summary>Configures GitHub release retrieval for an <see cref="UpdateClient"/>.</summary>
 public sealed class UpdateClientOptions
 {
+    /// <summary>Gets the default HTTP user-agent value.</summary>
     public const string DefaultUserAgent = "UpdateKit";
 
+    /// <summary>Gets the default timeout applied to each GitHub API request.</summary>
     public static readonly TimeSpan DefaultRequestTimeout = TimeSpan.FromSeconds(30);
 
+    /// <summary>Gets the GitHub repository owner.</summary>
     public string RepositoryOwner { get; init; } = string.Empty;
 
+    /// <summary>Gets the GitHub repository name.</summary>
     public string RepositoryName { get; init; } = string.Empty;
 
+    /// <summary>Gets an optional bearer token used for GitHub API release requests.</summary>
     public string? AccessToken { get; init; }
 
+    /// <summary>Gets whether published prerelease versions are eligible.</summary>
     public bool IncludePrereleases { get; init; }
 
+    /// <summary>Gets the user-agent sent with GitHub API release requests.</summary>
     public string UserAgent { get; init; } = DefaultUserAgent;
 
+    /// <summary>Gets the timeout applied independently to each GitHub API page request.</summary>
     public TimeSpan RequestTimeout { get; init; } = DefaultRequestTimeout;
 
+    /// <summary>Returns all configuration validation messages without throwing.</summary>
     public IReadOnlyList<string> GetValidationErrors()
     {
         var errors = new List<string>();
@@ -58,6 +68,7 @@ public sealed class UpdateClientOptions
         return new ReadOnlyCollection<string>(errors);
     }
 
+    /// <summary>Throws <see cref="UpdateConfigurationException"/> when any option is invalid.</summary>
     public void Validate()
     {
         var errors = GetValidationErrors();

@@ -3,6 +3,8 @@ using System.Net;
 
 namespace UpdateKit;
 
+/// <summary>Streams HTTP release assets into safely committed destination files.</summary>
+/// <remarks>The downloader uses but does not own or dispose the supplied <see cref="HttpClient"/>.</remarks>
 public sealed class AssetDownloader
 {
     private const int DefaultBufferSize = 81_920;
@@ -11,6 +13,7 @@ public sealed class AssetDownloader
     private readonly int _bufferSize;
     private readonly Action<string, string> _commitFile;
 
+    /// <summary>Creates a downloader that borrows the supplied HTTP client.</summary>
     public AssetDownloader(HttpClient httpClient)
         : this(httpClient, DefaultBufferSize, CommitFile)
     {
@@ -36,6 +39,9 @@ public sealed class AssetDownloader
         _commitFile = commitFile ?? CommitFile;
     }
 
+    /// <summary>
+    /// Downloads an asset through a temporary file and commits the destination only after a complete transfer.
+    /// </summary>
     public async Task<UpdateResult<DownloadResult>> DownloadAsync(
         ReleaseAsset asset,
         string? destinationFilePath,

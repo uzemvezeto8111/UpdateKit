@@ -5,6 +5,17 @@
     <RootNamespace>UpdateKit</RootNamespace>
     <AssemblyName>UpdateKit.Core</AssemblyName>
     <Description>Core update-checking models and services for UpdateKit.</Description>
+    <PackageId>UpdateKit.Core</PackageId>
+    <PackageDescription>GitHub release checking, Semantic Versioning, safe asset downloads, and SHA-256 verification for .NET 8 applications.</PackageDescription>
+    <PackageTags>updates;github;releases;semver;sha256</PackageTags>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" Link="README.md" />
+  </ItemGroup>
 
 </Project>

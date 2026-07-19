@@ -1,7 +1,9 @@
 namespace UpdateKit;
 
+/// <summary>Provides deterministic first-match release-asset selection strategies.</summary>
 public static class AssetSelector
 {
+    /// <summary>Selects the first ordinal, case-sensitive exact-name match.</summary>
     public static UpdateResult<ReleaseAsset> ByExactName(
         ReleaseInfo release,
         string? assetName)
@@ -20,6 +22,7 @@ public static class AssetSelector
             $"No release asset has the exact name '{assetName}'.");
     }
 
+    /// <summary>Selects the first case-insensitive extension match, accepting an optional leading dot.</summary>
     public static UpdateResult<ReleaseAsset> ByExtension(
         ReleaseInfo release,
         string? extension)
@@ -38,6 +41,7 @@ public static class AssetSelector
             $"No release asset has the extension '{normalizedExtension}'.");
     }
 
+    /// <summary>Selects the first asset accepted by the supplied predicate.</summary>
     public static UpdateResult<ReleaseAsset> ByPredicate(
         ReleaseInfo release,
         Func<ReleaseAsset, bool>? predicate)

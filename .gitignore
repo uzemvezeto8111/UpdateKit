@@ -1,0 +1,61 @@
+# Build outputs
+[Bb]in/
+[Oo]bj/
+[Aa]rtifacts/
+[Pp]ublish/
+out/
+
+# Test and coverage outputs
+[Tt]est[Rr]esults/
+coverage/
+coverage.*
+*.coverage
+*.coveragexml
+*.trx
+
+# NuGet
+*.nupkg
+*.snupkg
+packages/
+!**/packages/build/
+*.nuget.props
+*.nuget.targets
+
+# Visual Studio and MSBuild user state
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.csproj.user
+*.rsuser
+*.cache
+
+# Visual Studio Code and JetBrains IDEs
+.vscode/
+.idea/
+*.sln.iml
+_ReSharper*/
+*.DotSettings.user
+
+# Logs, diagnostics, and temporary files
+*.log
+*.binlog
+*.tmp
+*.temp
+*.bak
+*.swp
+*.pidb
+*.svclog
+
+# Operating-system metadata
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Local secrets and environment overrides
+.env
+.env.*
+!.env.example
+secrets.json
+

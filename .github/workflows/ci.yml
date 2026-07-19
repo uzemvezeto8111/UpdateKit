@@ -1,0 +1,34 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    runs-on: windows-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+          cache: true
+          cache-dependency-path: Directory.Packages.props
+
+      - name: Restore
+        run: dotnet restore UpdateKit.sln
+
+      - name: Build
+        run: dotnet build UpdateKit.sln --configuration Release --no-restore
+
+      - name: Test
+        run: dotnet test UpdateKit.sln --configuration Release --no-build --no-restore --logger "trx;LogFilePrefix=ci"
+

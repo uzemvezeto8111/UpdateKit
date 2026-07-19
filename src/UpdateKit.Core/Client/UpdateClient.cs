@@ -2,6 +2,9 @@ using UpdateKit.GitHub;
 
 namespace UpdateKit;
 
+/// <summary>
+/// Coordinates GitHub release checks, version comparison, asset selection, downloads, and checksum verification.
+/// </summary>
 public sealed class UpdateClient
 {
     private readonly IGitHubReleaseSource _releaseSource;
@@ -32,6 +35,10 @@ public sealed class UpdateClient
         _sha256Verifier = sha256Verifier ?? throw new ArgumentNullException(nameof(sha256Verifier));
     }
 
+    /// <summary>
+    /// Retrieves eligible releases and compares the newest release tag with the caller's current version.
+    /// </summary>
+    /// <remarks>Caller-requested cancellation is propagated as <see cref="OperationCanceledException"/>.</remarks>
     public async Task<UpdateResult<UpdateCheckResult>> CheckForUpdateAsync(
         string? currentVersion,
         CancellationToken cancellationToken = default)
@@ -89,21 +96,25 @@ public sealed class UpdateClient
         return UpdateResult<UpdateCheckResult>.Success(checkResult);
     }
 
+    /// <summary>Selects the first asset whose name matches exactly using ordinal comparison.</summary>
     public UpdateResult<ReleaseAsset> SelectAssetByExactName(
         ReleaseInfo release,
         string? assetName) =>
         AssetSelector.ByExactName(release, assetName);
 
+    /// <summary>Selects the first asset with the supplied case-insensitive file extension.</summary>
     public UpdateResult<ReleaseAsset> SelectAssetByExtension(
         ReleaseInfo release,
         string? extension) =>
         AssetSelector.ByExtension(release, extension);
 
+    /// <summary>Selects the first asset accepted by a caller-provided predicate.</summary>
     public UpdateResult<ReleaseAsset> SelectAssetByPredicate(
         ReleaseInfo release,
         Func<ReleaseAsset, bool>? predicate) =>
         AssetSelector.ByPredicate(release, predicate);
 
+    /// <summary>Streams an asset to an absolute destination path with optional progress and cancellation.</summary>
     public Task<UpdateResult<DownloadResult>> DownloadAsync(
         ReleaseAsset asset,
         string? destinationFilePath,
@@ -115,6 +126,7 @@ public sealed class UpdateClient
             progress,
             cancellationToken);
 
+    /// <summary>Downloads an asset and verifies it against a directly supplied SHA-256 checksum.</summary>
     public async Task<UpdateResult<DownloadResult>> DownloadAndVerifyAsync(
         ReleaseAsset asset,
         string? destinationFilePath,
@@ -139,6 +151,7 @@ public sealed class UpdateClient
             .ConfigureAwait(false);
     }
 
+    /// <summary>Downloads an asset and verifies it using an entry from another release asset.</summary>
     public async Task<UpdateResult<DownloadResult>> DownloadAndVerifyFromChecksumFileAsync(
         ReleaseAsset asset,
         string? destinationFilePath,

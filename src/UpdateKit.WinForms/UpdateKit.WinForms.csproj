@@ -6,10 +6,21 @@
     <RootNamespace>UpdateKit.WinForms</RootNamespace>
     <AssemblyName>UpdateKit.WinForms</AssemblyName>
     <Description>Reusable Windows Forms update dialog for UpdateKit.</Description>
+    <PackageId>UpdateKit.WinForms</PackageId>
+    <PackageDescription>A reusable .NET 8 Windows Forms update dialog powered by UpdateKit.Core.</PackageDescription>
+    <PackageTags>updates;github;winforms;windows;dialog</PackageTags>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\UpdateKit.Core\UpdateKit.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" Link="README.md" />
   </ItemGroup>
 
 </Project>

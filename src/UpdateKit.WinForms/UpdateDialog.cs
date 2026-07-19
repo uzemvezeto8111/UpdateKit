@@ -29,6 +29,7 @@ public sealed class UpdateDialog : Form
     private bool _shown;
     private bool _closeWhenIdle;
 
+    /// <summary>Creates a single-use update dialog.</summary>
     public UpdateDialog(UpdateDialogOptions options)
     {
         _options = options ?? throw new ArgumentNullException(nameof(options));
@@ -42,22 +43,34 @@ public sealed class UpdateDialog : Form
         ApplyState(_controller.State);
     }
 
+    /// <summary>Gets the latest completed check result, when available.</summary>
     public UpdateCheckResult? CheckResult => _controller.State.CheckResult;
 
+    /// <summary>Gets the selected primary release asset, when available.</summary>
     public ReleaseAsset? SelectedAsset => _controller.State.SelectedAsset;
 
+    /// <summary>Gets the successfully completed download result, when available.</summary>
     public DownloadResult? DownloadResult => _controller.State.DownloadResult;
 
+    /// <summary>Gets the most recent operational error, when available.</summary>
     public UpdateError? LastError => _controller.State.Error;
 
+    /// <summary>Gets whether a check, download, verification, or cancellation is active.</summary>
     public bool IsOperationInProgress => _controller.State.IsBusy;
 
+    /// <summary>Starts an update check when the current dialog state permits it.</summary>
+    /// <returns><see langword="true"/> when an operation was started; otherwise <see langword="false"/>.</returns>
     public Task<bool> CheckForUpdateAsync() => _controller.CheckForUpdateAsync();
 
+    /// <summary>Starts the configured download and verification workflow when the current state permits it.</summary>
+    /// <returns><see langword="true"/> when an operation was started; otherwise <see langword="false"/>.</returns>
     public Task<bool> DownloadAsync() => _controller.DownloadAsync();
 
+    /// <summary>Requests cancellation of the current operation.</summary>
+    /// <returns><see langword="true"/> when cancellation was requested; otherwise <see langword="false"/>.</returns>
     public bool CancelOperation() => _controller.CancelOperation();
 
+    /// <inheritdoc />
     protected override async void OnShown(EventArgs e)
     {
         base.OnShown(e);
@@ -75,6 +88,7 @@ public sealed class UpdateDialog : Form
         }
     }
 
+    /// <inheritdoc />
     protected override void OnFormClosing(FormClosingEventArgs e)
     {
         if (!_controller.RequestClose())
@@ -92,6 +106,7 @@ public sealed class UpdateDialog : Form
         base.OnFormClosing(e);
     }
 
+    /// <inheritdoc />
     protected override void Dispose(bool disposing)
     {
         if (disposing)

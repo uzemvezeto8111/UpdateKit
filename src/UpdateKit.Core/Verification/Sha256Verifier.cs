@@ -2,6 +2,8 @@ using System.Security.Cryptography;
 
 namespace UpdateKit;
 
+/// <summary>Performs streaming SHA-256 verification for completed downloads.</summary>
+/// <remarks>The verifier uses but does not own or dispose the supplied <see cref="HttpClient"/>.</remarks>
 public sealed class Sha256Verifier
 {
     private const int FileBufferSize = 81_920;
@@ -10,6 +12,7 @@ public sealed class Sha256Verifier
     private readonly Func<string, Stream> _openFile;
     private readonly Action<string> _deleteFile;
 
+    /// <summary>Creates a verifier whose checksum-file requests borrow the supplied HTTP client.</summary>
     public Sha256Verifier(HttpClient httpClient)
         : this(httpClient, OpenFile, File.Delete)
     {
@@ -25,6 +28,7 @@ public sealed class Sha256Verifier
         _deleteFile = deleteFile ?? throw new ArgumentNullException(nameof(deleteFile));
     }
 
+    /// <summary>Verifies a download against a 64-character hexadecimal SHA-256 checksum.</summary>
     public Task<UpdateResult<DownloadResult>> VerifyAsync(
         DownloadResult download,
         string? expectedSha256,
@@ -43,6 +47,7 @@ public sealed class Sha256Verifier
         return VerifyCoreAsync(download, expectedChecksum, cancellationToken);
     }
 
+    /// <summary>Retrieves a checksum-file asset and verifies the entry matching the downloaded asset name.</summary>
     public async Task<UpdateResult<DownloadResult>> VerifyFromChecksumFileAsync(
         DownloadResult download,
         ReleaseAsset checksumAsset,
