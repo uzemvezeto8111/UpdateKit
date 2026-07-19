@@ -1,0 +1,11 @@
+D:\Codex-Projects\UpdateKit\src\UpdateKit.Core\bin\Release\net8.0\UpdateKit.Core.deps.json
+D:\Codex-Projects\UpdateKit\src\UpdateKit.Core\bin\Release\net8.0\UpdateKit.Core.dll
+D:\Codex-Projects\UpdateKit\src\UpdateKit.Core\bin\Release\net8.0\UpdateKit.Core.pdb
+D:\Codex-Projects\UpdateKit\src\UpdateKit.Core\obj\Release\net8.0\UpdateKit.Core.GeneratedMSBuildEditorConfig.editorconfig
+D:\Codex-Projects\UpdateKit\src\UpdateKit.Core\obj\Release\net8.0\UpdateKit.Core.AssemblyInfoInputs.cache
+D:\Codex-Projects\UpdateKit\src\UpdateKit.Core\obj\Release\net8.0\UpdateKit.Core.AssemblyInfo.cs
+D:\Codex-Projects\UpdateKit\src\UpdateKit.Core\obj\Release\net8.0\UpdateKit.Core.csproj.CoreCompileInputs.cache
+D:\Codex-Projects\UpdateKit\src\UpdateKit.Core\obj\Release\net8.0\UpdateKit.Core.dll
+D:\Codex-Projects\UpdateKit\src\UpdateKit.Core\obj\Release\net8.0\refint\UpdateKit.Core.dll
+D:\Codex-Projects\UpdateKit\src\UpdateKit.Core\obj\Release\net8.0\UpdateKit.Core.pdb
+D:\Codex-Projects\UpdateKit\src\UpdateKit.Core\obj\Release\net8.0\ref\UpdateKit.Core.dll

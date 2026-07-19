@@ -1,0 +1,10 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>UpdateKit</RootNamespace>
+    <AssemblyName>UpdateKit.Core</AssemblyName>
+    <Description>Core update-checking models and services for UpdateKit.</Description>
+  </PropertyGroup>
+
+</Project>
