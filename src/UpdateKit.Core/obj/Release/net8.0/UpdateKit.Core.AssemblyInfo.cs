@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
 [assembly: System.Reflection.AssemblyDescriptionAttribute("Core update-checking models and services for UpdateKit.")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+7070bfccb8964d38dac5d80322ad7bef7e3e8fda")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+32539c46b4e476dae7b268e3296227b637d68233")]
 [assembly: System.Reflection.AssemblyProductAttribute("UpdateKit.Core")]
 [assembly: System.Reflection.AssemblyTitleAttribute("UpdateKit.Core")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
