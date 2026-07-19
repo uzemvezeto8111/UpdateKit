@@ -1,0 +1,325 @@
+{
+  "format": 1,
+  "restore": {
+    "D:\\Codex-Projects\\UpdateKit\\tests\\UpdateKit.Example.WinForms.Tests\\UpdateKit.Example.WinForms.Tests.csproj": {}
+  },
+  "projects": {
+    "D:\\Codex-Projects\\UpdateKit\\samples\\UpdateKit.Example.WinForms\\UpdateKit.Example.WinForms.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "D:\\Codex-Projects\\UpdateKit\\samples\\UpdateKit.Example.WinForms\\UpdateKit.Example.WinForms.csproj",
+        "projectName": "UpdateKit.Example.WinForms",
+        "projectPath": "D:\\Codex-Projects\\UpdateKit\\samples\\UpdateKit.Example.WinForms\\UpdateKit.Example.WinForms.csproj",
+        "packagesPath": "C:\\Users\\uzemvezeto\\.nuget\\packages\\",
+        "outputPath": "D:\\Codex-Projects\\UpdateKit\\samples\\UpdateKit.Example.WinForms\\obj\\",
+        "projectStyle": "PackageReference",
+        "centralPackageVersionsManagementEnabled": true,
+        "configFilePaths": [
+          "C:\\Users\\uzemvezeto\\AppData\\Roaming\\NuGet\\NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net8.0-windows"
+        ],
+        "sources": {
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net8.0-windows7.0": {
+            "targetAlias": "net8.0-windows",
+            "projectReferences": {
+              "D:\\Codex-Projects\\UpdateKit\\src\\UpdateKit.Core\\UpdateKit.Core.csproj": {
+                "projectPath": "D:\\Codex-Projects\\UpdateKit\\src\\UpdateKit.Core\\UpdateKit.Core.csproj"
+              },
+              "D:\\Codex-Projects\\UpdateKit\\src\\UpdateKit.WinForms\\UpdateKit.WinForms.csproj": {
+                "projectPath": "D:\\Codex-Projects\\UpdateKit\\src\\UpdateKit.WinForms\\UpdateKit.WinForms.csproj"
+              }
+            }
+          }
+        },
+        "warningProperties": {
+          "allWarningsAsErrors": true,
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        }
+      },
+      "frameworks": {
+        "net8.0-windows7.0": {
+          "targetAlias": "net8.0-windows",
+          "centralPackageVersions": {
+            "coverlet.collector": "6.0.0",
+            "Microsoft.NET.Test.Sdk": "17.8.0",
+            "xunit": "2.5.3",
+            "xunit.runner.visualstudio": "2.5.3"
+          },
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            },
+            "Microsoft.WindowsDesktop.App.WindowsForms": {
+              "privateAssets": "none"
+            }
+          },
+          "runtimeIdentifierGraphPath": "C:\\Users\\uzemvezeto\\.dotnet\\sdk\\8.0.423/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    },
+    "D:\\Codex-Projects\\UpdateKit\\src\\UpdateKit.Core\\UpdateKit.Core.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "D:\\Codex-Projects\\UpdateKit\\src\\UpdateKit.Core\\UpdateKit.Core.csproj",
+        "projectName": "UpdateKit.Core",
+        "projectPath": "D:\\Codex-Projects\\UpdateKit\\src\\UpdateKit.Core\\UpdateKit.Core.csproj",
+        "packagesPath": "C:\\Users\\uzemvezeto\\.nuget\\packages\\",
+        "outputPath": "D:\\Codex-Projects\\UpdateKit\\src\\UpdateKit.Core\\obj\\",
+        "projectStyle": "PackageReference",
+        "centralPackageVersionsManagementEnabled": true,
+        "configFilePaths": [
+          "C:\\Users\\uzemvezeto\\AppData\\Roaming\\NuGet\\NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net8.0"
+        ],
+        "sources": {
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net8.0": {
+            "targetAlias": "net8.0",
+            "projectReferences": {}
+          }
+        },
+        "warningProperties": {
+          "allWarningsAsErrors": true,
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        }
+      },
+      "frameworks": {
+        "net8.0": {
+          "targetAlias": "net8.0",
+          "centralPackageVersions": {
+            "coverlet.collector": "6.0.0",
+            "Microsoft.NET.Test.Sdk": "17.8.0",
+            "xunit": "2.5.3",
+            "xunit.runner.visualstudio": "2.5.3"
+          },
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "C:\\Users\\uzemvezeto\\.dotnet\\sdk\\8.0.423/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    },
+    "D:\\Codex-Projects\\UpdateKit\\src\\UpdateKit.WinForms\\UpdateKit.WinForms.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "D:\\Codex-Projects\\UpdateKit\\src\\UpdateKit.WinForms\\UpdateKit.WinForms.csproj",
+        "projectName": "UpdateKit.WinForms",
+        "projectPath": "D:\\Codex-Projects\\UpdateKit\\src\\UpdateKit.WinForms\\UpdateKit.WinForms.csproj",
+        "packagesPath": "C:\\Users\\uzemvezeto\\.nuget\\packages\\",
+        "outputPath": "D:\\Codex-Projects\\UpdateKit\\src\\UpdateKit.WinForms\\obj\\",
+        "projectStyle": "PackageReference",
+        "centralPackageVersionsManagementEnabled": true,
+        "configFilePaths": [
+          "C:\\Users\\uzemvezeto\\AppData\\Roaming\\NuGet\\NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net8.0-windows"
+        ],
+        "sources": {
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net8.0-windows7.0": {
+            "targetAlias": "net8.0-windows",
+            "projectReferences": {
+              "D:\\Codex-Projects\\UpdateKit\\src\\UpdateKit.Core\\UpdateKit.Core.csproj": {
+                "projectPath": "D:\\Codex-Projects\\UpdateKit\\src\\UpdateKit.Core\\UpdateKit.Core.csproj"
+              }
+            }
+          }
+        },
+        "warningProperties": {
+          "allWarningsAsErrors": true,
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        }
+      },
+      "frameworks": {
+        "net8.0-windows7.0": {
+          "targetAlias": "net8.0-windows",
+          "centralPackageVersions": {
+            "coverlet.collector": "6.0.0",
+            "Microsoft.NET.Test.Sdk": "17.8.0",
+            "xunit": "2.5.3",
+            "xunit.runner.visualstudio": "2.5.3"
+          },
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            },
+            "Microsoft.WindowsDesktop.App.WindowsForms": {
+              "privateAssets": "none"
+            }
+          },
+          "runtimeIdentifierGraphPath": "C:\\Users\\uzemvezeto\\.dotnet\\sdk\\8.0.423/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    },
+    "D:\\Codex-Projects\\UpdateKit\\tests\\UpdateKit.Example.WinForms.Tests\\UpdateKit.Example.WinForms.Tests.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "D:\\Codex-Projects\\UpdateKit\\tests\\UpdateKit.Example.WinForms.Tests\\UpdateKit.Example.WinForms.Tests.csproj",
+        "projectName": "UpdateKit.Example.WinForms.Tests",
+        "projectPath": "D:\\Codex-Projects\\UpdateKit\\tests\\UpdateKit.Example.WinForms.Tests\\UpdateKit.Example.WinForms.Tests.csproj",
+        "packagesPath": "C:\\Users\\uzemvezeto\\.nuget\\packages\\",
+        "outputPath": "D:\\Codex-Projects\\UpdateKit\\tests\\UpdateKit.Example.WinForms.Tests\\obj\\",
+        "projectStyle": "PackageReference",
+        "centralPackageVersionsManagementEnabled": true,
+        "configFilePaths": [
+          "C:\\Users\\uzemvezeto\\AppData\\Roaming\\NuGet\\NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net8.0-windows"
+        ],
+        "sources": {
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net8.0-windows7.0": {
+            "targetAlias": "net8.0-windows",
+            "projectReferences": {
+              "D:\\Codex-Projects\\UpdateKit\\samples\\UpdateKit.Example.WinForms\\UpdateKit.Example.WinForms.csproj": {
+                "projectPath": "D:\\Codex-Projects\\UpdateKit\\samples\\UpdateKit.Example.WinForms\\UpdateKit.Example.WinForms.csproj"
+              },
+              "D:\\Codex-Projects\\UpdateKit\\src\\UpdateKit.Core\\UpdateKit.Core.csproj": {
+                "projectPath": "D:\\Codex-Projects\\UpdateKit\\src\\UpdateKit.Core\\UpdateKit.Core.csproj"
+              },
+              "D:\\Codex-Projects\\UpdateKit\\src\\UpdateKit.WinForms\\UpdateKit.WinForms.csproj": {
+                "projectPath": "D:\\Codex-Projects\\UpdateKit\\src\\UpdateKit.WinForms\\UpdateKit.WinForms.csproj"
+              }
+            }
+          }
+        },
+        "warningProperties": {
+          "allWarningsAsErrors": true,
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        }
+      },
+      "frameworks": {
+        "net8.0-windows7.0": {
+          "targetAlias": "net8.0-windows",
+          "dependencies": {
+            "Microsoft.NET.Test.Sdk": {
+              "target": "Package",
+              "version": "[17.8.0, )",
+              "versionCentrallyManaged": true
+            },
+            "coverlet.collector": {
+              "include": "Runtime, Build, Native, ContentFiles, Analyzers, BuildTransitive",
+              "suppressParent": "All",
+              "target": "Package",
+              "version": "[6.0.0, )",
+              "versionCentrallyManaged": true
+            },
+            "xunit": {
+              "target": "Package",
+              "version": "[2.5.3, )",
+              "versionCentrallyManaged": true
+            },
+            "xunit.runner.visualstudio": {
+              "include": "Runtime, Build, Native, ContentFiles, Analyzers, BuildTransitive",
+              "suppressParent": "All",
+              "target": "Package",
+              "version": "[2.5.3, )",
+              "versionCentrallyManaged": true
+            }
+          },
+          "centralPackageVersions": {
+            "coverlet.collector": "6.0.0",
+            "Microsoft.NET.Test.Sdk": "17.8.0",
+            "xunit": "2.5.3",
+            "xunit.runner.visualstudio": "2.5.3"
+          },
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "C:\\Users\\uzemvezeto\\.dotnet\\sdk\\8.0.423/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    }
+  }
+}

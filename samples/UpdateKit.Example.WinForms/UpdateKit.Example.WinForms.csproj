@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <RootNamespace>UpdateKit.Example.WinForms</RootNamespace>
+    <AssemblyName>UpdateKit.Example.WinForms</AssemblyName>
+    <Description>Interactive Windows Forms example for UpdateKit.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\UpdateKit.Core\UpdateKit.Core.csproj" />
+    <ProjectReference Include="..\..\src\UpdateKit.WinForms\UpdateKit.WinForms.csproj" />
+  </ItemGroup>
+
+</Project>

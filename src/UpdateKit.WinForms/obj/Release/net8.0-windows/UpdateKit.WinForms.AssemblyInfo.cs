@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
 [assembly: System.Reflection.AssemblyDescriptionAttribute("Reusable Windows Forms update dialog for UpdateKit.")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+9f0edea55a70d383ed67dc67a177f9e9106d8ab3")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+0b492accae9169faaad0ec6dc0cc608f806a1380")]
 [assembly: System.Reflection.AssemblyProductAttribute("UpdateKit.WinForms")]
 [assembly: System.Reflection.AssemblyTitleAttribute("UpdateKit.WinForms")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
