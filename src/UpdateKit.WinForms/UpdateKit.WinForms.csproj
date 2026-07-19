@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <RootNamespace>UpdateKit.WinForms</RootNamespace>
+    <AssemblyName>UpdateKit.WinForms</AssemblyName>
+    <Description>Reusable Windows Forms update dialog for UpdateKit.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\UpdateKit.Core\UpdateKit.Core.csproj" />
+  </ItemGroup>
+
+</Project>
