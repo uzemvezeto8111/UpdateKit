@@ -8,7 +8,7 @@
     "net8.0": []
   },
   "packageFolders": {
-    "C:\\Users\\uzemvezeto\\AppData\\Local\\Temp\\updatekit-nuget-packages": {}
+    "C:\\Users\\uzemvezeto\\.nuget\\packages\\": {}
   },
   "project": {
     "version": "1.0.0",
@@ -16,7 +16,7 @@
       "projectUniqueName": "D:\\Codex-Projects\\UpdateKit\\src\\UpdateKit.Core\\UpdateKit.Core.csproj",
       "projectName": "UpdateKit.Core",
       "projectPath": "D:\\Codex-Projects\\UpdateKit\\src\\UpdateKit.Core\\UpdateKit.Core.csproj",
-      "packagesPath": "C:\\Users\\uzemvezeto\\AppData\\Local\\Temp\\updatekit-nuget-packages",
+      "packagesPath": "C:\\Users\\uzemvezeto\\.nuget\\packages\\",
       "outputPath": "D:\\Codex-Projects\\UpdateKit\\src\\UpdateKit.Core\\obj\\",
       "projectStyle": "PackageReference",
       "centralPackageVersionsManagementEnabled": true,

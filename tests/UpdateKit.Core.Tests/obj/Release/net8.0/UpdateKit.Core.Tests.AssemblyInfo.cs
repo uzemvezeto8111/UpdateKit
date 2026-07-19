@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("UpdateKit.Core.Tests")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+9243ccaf14a704a5e3d27b95a5d9219287418850")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+7070bfccb8964d38dac5d80322ad7bef7e3e8fda")]
 [assembly: System.Reflection.AssemblyProductAttribute("UpdateKit.Core.Tests")]
 [assembly: System.Reflection.AssemblyTitleAttribute("UpdateKit.Core.Tests")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

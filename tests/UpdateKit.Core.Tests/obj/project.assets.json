@@ -5524,7 +5524,7 @@
     ]
   },
   "packageFolders": {
-    "C:\\Users\\uzemvezeto\\AppData\\Local\\Temp\\updatekit-nuget-packages": {}
+    "C:\\Users\\uzemvezeto\\.nuget\\packages\\": {}
   },
   "project": {
     "version": "1.0.0",
@@ -5532,7 +5532,7 @@
       "projectUniqueName": "D:\\Codex-Projects\\UpdateKit\\tests\\UpdateKit.Core.Tests\\UpdateKit.Core.Tests.csproj",
       "projectName": "UpdateKit.Core.Tests",
       "projectPath": "D:\\Codex-Projects\\UpdateKit\\tests\\UpdateKit.Core.Tests\\UpdateKit.Core.Tests.csproj",
-      "packagesPath": "C:\\Users\\uzemvezeto\\AppData\\Local\\Temp\\updatekit-nuget-packages",
+      "packagesPath": "C:\\Users\\uzemvezeto\\.nuget\\packages\\",
       "outputPath": "D:\\Codex-Projects\\UpdateKit\\tests\\UpdateKit.Core.Tests\\obj\\",
       "projectStyle": "PackageReference",
       "centralPackageVersionsManagementEnabled": true,
