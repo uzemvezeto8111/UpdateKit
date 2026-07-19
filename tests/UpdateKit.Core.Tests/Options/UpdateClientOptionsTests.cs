@@ -83,6 +83,7 @@ public sealed class UpdateClientOptionsTests
     [Theory]
     [InlineData("")]
     [InlineData("   ")]
+    [InlineData("token with spaces")]
     [InlineData("token\r\nInjected: value")]
     public void Validate_RejectsInvalidAccessTokens(string token)
     {

@@ -42,9 +42,9 @@ public sealed class UpdateClientOptions
             {
                 errors.Add($"{nameof(AccessToken)} cannot be empty or whitespace when provided.");
             }
-            else if (ContainsNewLine(AccessToken))
+            else if (AccessToken.Any(char.IsWhiteSpace))
             {
-                errors.Add($"{nameof(AccessToken)} cannot contain a line break.");
+                errors.Add($"{nameof(AccessToken)} cannot contain whitespace.");
             }
         }
 
