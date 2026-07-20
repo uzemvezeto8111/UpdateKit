@@ -1,26 +1,51 @@
 # UpdateKit
 
-UpdateKit is a .NET 8 library for checking GitHub releases, selecting an update asset, downloading it safely, optionally verifying its SHA-256 checksum, and presenting the workflow through a reusable Windows Forms dialog.
+**A focused .NET 8 toolkit for shipping application updates through GitHub Releases.**
 
-The repository contains:
+UpdateKit handles the update path from release discovery to a safely committed download: Semantic Versioning comparison, deterministic asset selection, streamed transfer with progress and cancellation, optional SHA-256 verification, and reusable native Windows UI. The Core library remains UI-independent, while dedicated WinForms and WPF packages provide ready-to-host experiences without duplicating update logic.
 
-- `UpdateKit.Core` — platform-neutral release checking, Semantic Versioning, asset selection, streaming downloads, and SHA-256 verification.
-- `UpdateKit.WinForms` — a reusable, DPI-aware Windows Forms update dialog built on the Core API.
-- `UpdateKit.Example.WinForms` — an interactive host application demonstrating configuration, ownership, validation, and dialog use.
+> UpdateKit is currently an early pre-release. Public APIs may change before a stable release.
+
+<!-- Planned README hero. After capture, remove the fallback paragraph below and uncomment this line:
+![UpdateKit WinForms update dialog showing an available release](docs/assets/update-dialog-hero.png)
+-->
+
+> **Visual preview pending:** the hero image will show the native update dialog with release metadata, notes, selected asset, progress controls, and host-configured verification. Follow the [media capture guide](docs/assets/CAPTURE_GUIDE.md) to add the final screenshot.
+
+The repository is split into three libraries and three practical samples:
+
+- `UpdateKit.Core` - platform-neutral GitHub release retrieval, Semantic Versioning, asset selection, safe downloading, and SHA-256 verification.
+- `UpdateKit.WinForms` - a reusable, DPI-aware update dialog powered entirely by the Core API.
+- `UpdateKit.Wpf` - a reusable update window with a public, bindable view model and Core-backed commands.
+- `UpdateKit.Minimal.WinForms` - the smallest practical integration: one form, one button, and no duplicated updater logic.
+- `UpdateKit.Minimal.Wpf` - the equivalent one-window, one-button WPF integration.
+- `UpdateKit.Example.WinForms` - an interactive host that demonstrates configuration, ownership, validation, and the complete dialog workflow.
 
 ## Features
 
-- GitHub REST release retrieval with pagination and optional bearer authentication.
-- Draft filtering and opt-in prerelease support.
-- Semantic Versioning 2.0.0 comparison for tags such as `1.2.3` and `v1.2.3`.
-- Asset selection by exact name, case-insensitive extension, or caller predicate.
-- Streaming, cancellable downloads with byte and percentage progress.
-- Unique temporary files and atomic final-file replacement after a successful transfer.
-- Direct SHA-256 verification or standard checksum-file lookup.
-- Invalid-download deletion after a checksum mismatch.
-- Result-based operational errors with stable `UpdateErrorCode` values.
-- A responsive Windows Forms dialog with release details, progress, cancellation, safe closure, and actionable errors.
-- Deterministic tests that use custom HTTP handlers instead of the real GitHub API.
+- **Find the right release** - retrieve paginated GitHub Releases, exclude drafts, opt into prereleases, and compare `1.2.3` or `v1.2.3` tags according to Semantic Versioning 2.0.0.
+- **Select deterministically** - choose the first asset by exact name, normalized case-insensitive extension, or a caller-provided predicate.
+- **Download without partial success** - stream into a unique temporary file, report byte and percentage progress, support cancellation and configurable transient retries, and replace the destination only after a complete transfer.
+- **Preserve existing files** - keep an existing destination intact when requests, streaming, cancellation, or pre-commit file operations fail.
+- **Verify what was downloaded** - validate a direct SHA-256 value or resolve the matching filename from a standard checksum-file asset; delete mismatched downloads.
+- **Host a native update experience** - show release name, version, notes, publication date, selected asset, progress, cancellation, completion, and actionable errors in reusable WinForms or WPF UI.
+- **Compose with MVVM** - bind a custom WPF view directly to `UpdateWindowViewModel`, its presentation properties, and its check, download, and cancellation commands.
+- **Handle failures explicitly** - branch on stable `UpdateErrorCode` values instead of parsing exception or message text.
+- **Test without live services** - run 330 deterministic automated tests backed by custom HTTP handlers rather than the real GitHub API.
+
+## Visual tour
+
+<!-- Planned example screenshot. After capture, remove its fallback paragraph and uncomment this line:
+![UpdateKit example application configured for a GitHub release check](docs/assets/example-configuration.png)
+-->
+
+> **Example screenshot pending:** the configuration application exposes repository, version, prerelease, asset-selection, destination, and checksum choices while keeping the optional token masked and ephemeral.
+
+<!-- Planned workflow animation. After capture, remove its fallback paragraph and uncomment this line:
+![UpdateKit update workflow from checking through successful download](docs/assets/update-flow-demo.gif)
+-->
+
+> **Demo pending:** the animation will show the real sample moving through check, update found, download, and successful completion. Capture and export instructions are in [CAPTURE_GUIDE.md](docs/assets/CAPTURE_GUIDE.md).
 
 ## Supported platforms
 
@@ -28,6 +53,9 @@ The repository contains:
 | --- | --- | --- |
 | `UpdateKit.Core` | `net8.0` | Any .NET 8 platform providing the required HTTP and file-system APIs |
 | `UpdateKit.WinForms` | `net8.0-windows` | Windows with the .NET 8 Desktop Runtime |
+| `UpdateKit.Wpf` | `net8.0-windows` | Windows with the .NET 8 Desktop Runtime |
+| `UpdateKit.Minimal.WinForms` | `net8.0-windows` | Windows with the .NET 8 Desktop Runtime |
+| `UpdateKit.Minimal.Wpf` | `net8.0-windows` | Windows with the .NET 8 Desktop Runtime |
 | `UpdateKit.Example.WinForms` | `net8.0-windows` | Windows with the .NET 8 Desktop Runtime |
 
 Only GitHub-hosted repositories are supported by the release source. Tags must be valid Semantic Versioning 2.0.0 values with an optional lowercase `v` prefix. Draft releases are always excluded; prereleases are excluded unless `IncludePrereleases` is enabled.
@@ -35,7 +63,7 @@ Only GitHub-hosted repositories are supported by the release source. Tags must b
 ## Prerequisites
 
 - [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
-- Windows when building or running the WinForms projects
+- Windows when building or running the WinForms and WPF projects
 - Git for cloning and contributing
 
 ## Build and test
@@ -54,6 +82,134 @@ Run the example on Windows:
 dotnet run --project samples/UpdateKit.Example.WinForms/UpdateKit.Example.WinForms.csproj
 ```
 
+Run the minimal WPF sample:
+
+```powershell
+dotnet run --project samples/UpdateKit.Minimal.Wpf/UpdateKit.Minimal.Wpf.csproj
+```
+
+## Integrate UpdateKit in five minutes
+
+Run the included minimal sample from the repository root:
+
+```powershell
+dotnet restore UpdateKit.sln
+dotnet run `
+  --project samples/UpdateKit.Minimal.WinForms/UpdateKit.Minimal.WinForms.csproj `
+  --configuration Release
+```
+
+For an existing WinForms project, add references to both libraries:
+
+```powershell
+dotnet add path/to/YourApp.csproj reference src/UpdateKit.Core/UpdateKit.Core.csproj
+dotnet add path/to/YourApp.csproj reference src/UpdateKit.WinForms/UpdateKit.WinForms.csproj
+```
+
+Use the standard WinForms entry point from [Program.cs](samples/UpdateKit.Minimal.WinForms/Program.cs):
+
+```csharp
+namespace UpdateKit.Minimal.WinForms;
+
+internal static class Program
+{
+    [STAThread]
+    private static void Main()
+    {
+        Application.SetHighDpiMode(HighDpiMode.PerMonitorV2);
+        Application.EnableVisualStyles();
+        Application.SetCompatibleTextRenderingDefault(false);
+        Application.Run(new MainForm());
+    }
+}
+```
+
+Then add one form with one button. The five values grouped at the top are the only host-specific values required by this baseline. This is the complete [MainForm.cs](samples/UpdateKit.Minimal.WinForms/MainForm.cs):
+
+```csharp
+using UpdateKit.WinForms;
+
+namespace UpdateKit.Minimal.WinForms;
+
+internal sealed class MainForm : Form
+{
+    // CHANGE THESE FIVE VALUES for your application.
+    private const string RepositoryOwner = "uzemvezeto8111"; // CHANGE THIS.
+    private const string RepositoryName = "UpdateKit"; // CHANGE THIS.
+    private const string CurrentVersion = "0.0.0"; // CHANGE THIS to your installed version.
+    private const string AssetExtension = ".nupkg"; // CHANGE THIS to your release asset type.
+    private static readonly string DestinationPath = // CHANGE THIS to your installer/package path.
+        Path.Combine(Path.GetTempPath(), "UpdateKit.Minimal.WinForms-update.nupkg");
+
+    private readonly HttpClient _httpClient;
+    private readonly UpdateClient _updateClient;
+    private readonly Button _checkForUpdatesButton = new();
+
+    public MainForm()
+    {
+        _httpClient = new HttpClient();
+        _updateClient = new UpdateClient(
+            _httpClient,
+            new UpdateClientOptions
+            {
+                RepositoryOwner = RepositoryOwner,
+                RepositoryName = RepositoryName,
+                IncludePrereleases = true,
+                UserAgent = "UpdateKit.Minimal.WinForms",
+            });
+
+        Text = "Minimal UpdateKit Sample";
+        StartPosition = FormStartPosition.CenterScreen;
+        AutoScaleMode = AutoScaleMode.Dpi;
+        ClientSize = new Size(360, 120);
+
+        _checkForUpdatesButton.Text = "Check for updates";
+        _checkForUpdatesButton.AutoSize = true;
+        _checkForUpdatesButton.Anchor = AnchorStyles.None;
+        _checkForUpdatesButton.AccessibleName = "Check for updates";
+        _checkForUpdatesButton.Click += CheckForUpdatesButton_Click;
+
+        Controls.Add(_checkForUpdatesButton);
+        AcceptButton = _checkForUpdatesButton;
+    }
+
+    protected override void OnLayout(LayoutEventArgs e)
+    {
+        base.OnLayout(e);
+        _checkForUpdatesButton.Location = new Point(
+            (ClientSize.Width - _checkForUpdatesButton.Width) / 2,
+            (ClientSize.Height - _checkForUpdatesButton.Height) / 2);
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            _httpClient.Dispose();
+        }
+
+        base.Dispose(disposing);
+    }
+
+    private void CheckForUpdatesButton_Click(object? sender, EventArgs e)
+    {
+        var options = new UpdateDialogOptions(
+            _updateClient,
+            CurrentVersion,
+            DestinationPath,
+            release => _updateClient.SelectAssetByExtension(release, AssetExtension))
+        {
+            DialogTitle = "Software Update",
+        };
+
+        using var dialog = new UpdateDialog(options);
+        dialog.ShowDialog(this);
+    }
+}
+```
+
+`MainForm` owns one `HttpClient` for its lifetime and disposes it with the form. `UpdateClient` borrows that client, and every button click creates and disposes a fresh single-use `UpdateDialog`. Release retrieval, comparison, selection, downloading, progress, cancellation, and error presentation all remain inside UpdateKit.
+
 ## Installation
 
 No public package feed is configured by this repository. During source development, reference the projects directly:
@@ -62,14 +218,16 @@ No public package feed is configured by this repository. During source developme
 <ItemGroup>
   <ProjectReference Include="path/to/UpdateKit/src/UpdateKit.Core/UpdateKit.Core.csproj" />
   <ProjectReference Include="path/to/UpdateKit/src/UpdateKit.WinForms/UpdateKit.WinForms.csproj" />
+  <ProjectReference Include="path/to/UpdateKit/src/UpdateKit.Wpf/UpdateKit.Wpf.csproj" />
 </ItemGroup>
 ```
 
-The two library projects contain NuGet metadata and can be packed locally:
+The three library projects contain NuGet metadata and can be packed locally:
 
 ```powershell
 dotnet pack src/UpdateKit.Core/UpdateKit.Core.csproj --configuration Release
 dotnet pack src/UpdateKit.WinForms/UpdateKit.WinForms.csproj --configuration Release
+dotnet pack src/UpdateKit.Wpf/UpdateKit.Wpf.csproj --configuration Release
 ```
 
 ## Core API quick start
@@ -89,6 +247,17 @@ var client = new UpdateClient(
         AccessToken = Environment.GetEnvironmentVariable("GITHUB_TOKEN"),
         IncludePrereleases = false,
         UserAgent = "MyProduct-Updater",
+        DownloadRetry = new DownloadRetryOptions
+        {
+            MaxRetryAttempts = 3,
+            InitialDelay = TimeSpan.FromSeconds(1),
+            MaximumDelay = TimeSpan.FromSeconds(8),
+            JitterFactor = 0.2,
+            RetryProgress = new Progress<DownloadRetryAttempt>(attempt =>
+                Console.WriteLine(
+                    $"Retry {attempt.RetryNumber}/{attempt.MaximumRetryAttempts} " +
+                    $"in {attempt.Delay.TotalSeconds:F1}s")),
+        },
     });
 
 using var cancellation = new CancellationTokenSource();
@@ -135,6 +304,22 @@ if (!download.IsSuccess)
 ```
 
 Exact-name and predicate selection are also available through `SelectAssetByExactName` and `SelectAssetByPredicate`. Selection returns the first matching release asset in GitHub response order. Exact names are case-sensitive; extensions are normalized to a leading dot and matched without case sensitivity.
+
+### Download retry contract
+
+Retries are opt-in. `MaxRetryAttempts` defaults to `0`, so existing callers make one request exactly as before. A value of `3` permits at most four HTTP attempts: the initial attempt plus three retries. Configuration accepts 0–100 retries, non-negative delays up to `Int32.MaxValue` milliseconds with `MaximumDelay >= InitialDelay`, and a finite jitter factor from 0 through 1; invalid values fail client or downloader construction with `UpdateConfigurationException`.
+
+UpdateKit retries only these failures:
+
+- HTTP `408`, `429`, `500`, `502`, `503`, and `504` responses;
+- transport failures represented by `HttpRequestException` without a permanent status code; and
+- `IOException` or `HttpRequestException` failures while opening or reading the HTTP response stream.
+
+It does not retry caller cancellation, internal cancellation or timeout, invalid options or paths, invalid redirects, authentication failures, other HTTP statuses, destination writes or commits, checksum retrieval/parsing failures, or checksum mismatches. Checksum verification begins only after a successful download, so it never causes the asset download to repeat.
+
+For retry number `n`, starting at one, the base delay is `min(MaximumDelay, InitialDelay × 2^(n-1))`. `JitterFactor` is optional and ranges from `0` to `1`; when nonzero it applies a random multiplier in `[1 - JitterFactor, 1 + JitterFactor]`, then caps the result at `MaximumDelay`. `RetryProgress`, when supplied, receives one `DownloadRetryAttempt` immediately before each delay with the retry number, bounded delay, and triggering status or exception. Cancellation during that delay returns `DownloadCanceled` and prevents the next request.
+
+Every retry starts a new HTTP request from byte zero and uses a newly named temporary file. UpdateKit does not send `Range` requests or resume partial transfers. A failed attempt is cleaned up before the next one, and an existing destination remains untouched until one complete attempt is committed successfully. `DownloadProgress` therefore restarts at zero for each transfer attempt.
 
 ## SHA-256 verification
 
@@ -209,9 +394,54 @@ else if (dialog.LastError is { } error)
 
 Set either `ExpectedSha256` or `ChecksumAssetSelector`, never both. By default the dialog checks when first shown. Set `CheckForUpdateOnShown = false` when the host needs to call `CheckForUpdateAsync` itself. The dialog is single-use, prevents concurrent operations, marshals state to the UI thread, cancels active work before closing, and exposes the final check, selected asset, download, and error results.
 
+## WPF update window
+
+The WPF package follows the same ownership and host-configuration model. Create a new `UpdateWindow` for each display and set its `Owner`; the window borrows the configured `UpdateClient` and does not dispose it or its `HttpClient`.
+
+```csharp
+using UpdateKit;
+using UpdateKit.Wpf;
+
+var windowOptions = new UpdateWindowOptions(
+    client,
+    currentVersion: "1.2.3",
+    destinationFilePath: Path.GetFullPath("MyProduct-update.zip"),
+    assetSelector: release => client.SelectAssetByExtension(release, ".zip"))
+{
+    WindowTitle = "MyProduct Update",
+    ChecksumAssetSelector = release =>
+        client.SelectAssetByExactName(release, "SHA256SUMS.txt"),
+};
+
+var updateWindow = new UpdateWindow(windowOptions)
+{
+    Owner = this,
+};
+updateWindow.ShowDialog();
+
+if (updateWindow.DownloadResult is { } completed)
+{
+    MessageBox.Show($"Saved to {completed.FilePath}");
+}
+else if (updateWindow.LastError is { } error)
+{
+    MessageBox.Show($"{error.Code}: {error.Message}");
+}
+```
+
+Use `ExpectedSha256` instead of `ChecksumAssetSelector` for direct verification. Set `CheckForUpdateOnLoaded = false` when the host starts checks itself. The public `UpdateWindowViewModel` exposes bindable release details, progress, errors, state flags, and `ICommand` properties for custom MVVM views. Create it on the UI thread so background progress notifications are marshaled back to that synchronization context, and dispose it when the view closes. Both the standard window and view model prevent concurrent operations and request cancellation before allowing an active workflow to close.
+
 ## Authentication and security
 
-`AccessToken` is optional for public repositories. When supplied, it is sent as a bearer token only on GitHub API release-list requests. UpdateKit does not persist credentials and does not add that token to arbitrary asset-download URLs. Hosts should obtain tokens from a protected credential source such as an environment variable or operating-system credential store—never source code or logs.
+`AccessToken` is optional for public repositories and required when GitHub requires authentication for release metadata or asset bytes. UpdateKit does not persist the token or place it in `HttpClient.DefaultRequestHeaders`.
+
+Authenticated downloads use GitHub's release-asset API URL, not `browser_download_url`. UpdateKit accepts that API URL only when it is an HTTPS, default-port `api.github.com/repos/{owner}/{repository}/releases/assets/{id}` endpoint matching the repository and asset ID from the release response. The initial API request receives `Authorization: Bearer`, `Accept: application/octet-stream`, the configured user agent, and the GitHub API-version header.
+
+Redirect requests constructed by UpdateKit never receive library-added authorization or GitHub API headers. HTTPS downloads cannot redirect to plain HTTP, and surfaced redirect chains are limited to ten redirects. Without a token, or for assets without verified GitHub API metadata, UpdateKit retains the existing public behavior and requests `browser_download_url` without credentials. The same policy applies when a checksum-file asset is retrieved.
+
+The caller still owns the injected `HttpClient` and its handler chain. The standard .NET handler clears `Authorization` during automatic redirects; UpdateKit also strips credentials when it handles a surfaced redirect. Other non-credential request headers are governed by that handler. A caller-provided custom handler is part of the host's security boundary and must not copy authorization headers to redirected requests. Do not put GitHub tokens in `HttpClient.DefaultRequestHeaders`, because those defaults are controlled by the caller and can apply to unrelated hosts.
+
+Hosts should obtain tokens from a protected credential source such as an environment variable or operating-system credential store—never source code or logs—and grant only the repository access required by the application. GitHub API `401` or `403` responses during an authenticated asset request map to `AuthenticationFailed`. Without authentication, a private asset's browser URL failure maps to the normal `DownloadFailed` result because the asset layer cannot distinguish a private asset from an unavailable public one.
 
 Always obtain expected checksums through a trusted channel. A checksum published beside a compromised binary protects against transfer corruption but cannot establish publisher authenticity by itself.
 
@@ -236,6 +466,10 @@ Stable error categories include configuration, authentication, repository lookup
 ## More documentation
 
 - [Getting started](docs/GETTING_STARTED.md)
+- [Release process and dry run](docs/RELEASING.md)
+- [Media capture guide](docs/assets/CAPTURE_GUIDE.md)
+- [Minimal WinForms integration sample](samples/UpdateKit.Minimal.WinForms)
+- [Minimal WPF integration sample](samples/UpdateKit.Minimal.Wpf)
 - [WinForms example project](samples/UpdateKit.Example.WinForms)
 - [Contributing](CONTRIBUTING.md)
 - [Security policy](SECURITY.md)

@@ -18,6 +18,12 @@ For Windows Forms hosts, also reference:
 <ProjectReference Include="path/to/UpdateKit/src/UpdateKit.WinForms/UpdateKit.WinForms.csproj" />
 ```
 
+For WPF hosts, reference the WPF package instead:
+
+```xml
+<ProjectReference Include="path/to/UpdateKit/src/UpdateKit.Wpf/UpdateKit.Wpf.csproj" />
+```
+
 ## 2. Configure the client
 
 ```csharp
@@ -34,10 +40,25 @@ var client = new UpdateClient(
         IncludePrereleases = false,
         UserAgent = "MyProduct-Updater",
         RequestTimeout = TimeSpan.FromSeconds(30),
+        DownloadRetry = new DownloadRetryOptions
+        {
+            MaxRetryAttempts = 3,
+            InitialDelay = TimeSpan.FromSeconds(1),
+            MaximumDelay = TimeSpan.FromSeconds(8),
+            JitterFactor = 0.2,
+            RetryProgress = new Progress<DownloadRetryAttempt>(attempt =>
+                Console.WriteLine(
+                    $"Retry {attempt.RetryNumber}/{attempt.MaximumRetryAttempts} " +
+                    $"after {attempt.StatusCode?.ToString() ?? attempt.Exception?.GetType().Name}")),
+        },
     });
 ```
 
-`UpdateClient` borrows the supplied `HttpClient`; it never disposes it. The host must keep the client alive until all release, download, and checksum-file operations finish. An optional token is useful for private repository metadata or higher API limits, but it is not persisted or forwarded to arbitrary asset hosts.
+`UpdateClient` borrows the supplied `HttpClient`; it never disposes it. The host must keep the client alive until all release, download, and checksum-file operations finish. An optional token enables private repository metadata and authenticated release-asset downloads, but it is not persisted or forwarded to arbitrary asset hosts.
+
+For a private asset, UpdateKit validates GitHub's asset API URL against `https://api.github.com/repos/{owner}/{repository}/releases/assets/{id}` and sends the token only on the initial verified API request. Redirect requests constructed by UpdateKit do not receive library-added credentials or GitHub API headers, and an HTTPS download cannot redirect to plain HTTP. Public downloads without a token continue to use `browser_download_url` without authentication. Checksum-file assets follow the same rule.
+
+Do not set a token on `HttpClient.DefaultRequestHeaders`; defaults belong to the caller and can affect unrelated requests. Custom handlers are also inside the host's security boundary and must preserve .NET's rule that authorization is not copied across redirects to another host.
 
 ## 3. Check for an update
 
@@ -115,6 +136,14 @@ if (!download.IsSuccess)
 ```
 
 The parent directory must already exist. UpdateKit streams to a unique temporary file beside the destination, then commits the destination only after success. Cancellation is reported as `DownloadCanceled`, temporary-file cleanup is attempted on handled failures, and a pre-existing destination remains intact if the operation fails before replacement. Cleanup is best-effort if another process locks the temporary file or permissions change during the operation.
+
+Retries are disabled by default. `MaxRetryAttempts` counts retries after the initial request, so `3` allows no more than four total attempts. The valid range is 0–100 retries; delays must be non-negative, no greater than `Int32.MaxValue` milliseconds, and ordered so `MaximumDelay >= InitialDelay`; jitter must be finite and between 0 and 1. Invalid settings throw `UpdateConfigurationException` when the client or standalone downloader is constructed.
+
+UpdateKit retries only HTTP `408`, `429`, `500`, `502`, `503`, and `504`, transport `HttpRequestException` failures without a permanent status, and failures opening or reading the response stream. It never retries cancellation, invalid configuration, invalid redirects, authentication failures, other HTTP responses, destination file failures, checksum errors, or checksum mismatches.
+
+The delay before one-based retry `n` is `min(MaximumDelay, InitialDelay × 2^(n-1))`. Optional symmetric jitter multiplies that delay by a random value in `[1 - JitterFactor, 1 + JitterFactor]` and reapplies the maximum bound. `RetryProgress` runs immediately before the delay. Cancellation during backoff returns `DownloadCanceled` without starting another request.
+
+Retries are full transfers, not resumptions. Each attempt restarts at byte zero with a new request and unique temporary file; `DownloadProgress` restarts accordingly. Failed temporary files are cleaned up before retrying, and the final destination is still committed only after a complete successful transfer.
 
 ## 6. Verify a direct checksum
 
@@ -195,7 +224,46 @@ else if (dialog.LastError is { } error)
 
 Use `ExpectedSha256` instead of `ChecksumAssetSelector` for a direct checksum. A dialog instance is single-use. Create a new instance each time, show it with the host form as owner, and dispose it afterward. It prevents duplicate operations and safely cancels active work when the user closes it.
 
-## 9. Handle errors consistently
+## 9. Host the WPF update window
+
+The WPF window uses the same Core workflow and host-selected asset and verification strategies:
+
+```csharp
+using UpdateKit.Wpf;
+
+var options = new UpdateWindowOptions(
+    client,
+    currentVersion: "1.4.0",
+    destinationFilePath: destination,
+    assetSelector: release => client.SelectAssetByExtension(release, ".zip"))
+{
+    WindowTitle = "MyProduct Update",
+    CheckForUpdateOnLoaded = true,
+    ChecksumAssetSelector = release =>
+        client.SelectAssetByExactName(release, "SHA256SUMS.txt"),
+};
+
+var window = new UpdateWindow(options)
+{
+    Owner = this,
+};
+window.ShowDialog();
+
+if (window.DownloadResult is { } completed)
+{
+    Console.WriteLine($"Saved {completed.BytesDownloaded:N0} bytes to {completed.FilePath}.");
+}
+else if (window.LastError is { } error)
+{
+    ShowError(error);
+}
+```
+
+Use a new window for every display. It borrows the `UpdateClient`, blocks duplicate operations, and cancels active work before closing. For custom MVVM rendering, bind to `UpdateWindowViewModel`; it exposes release and asset details, presentation text, progress, errors, state flags, and separate check, download, primary-action, and cancellation commands.
+
+The minimal complete host is [UpdateKit.Minimal.Wpf](../samples/UpdateKit.Minimal.Wpf).
+
+## 10. Handle errors consistently
 
 ```csharp
 static void ShowError(UpdateError error)
