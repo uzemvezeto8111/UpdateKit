@@ -9,13 +9,26 @@ public sealed class AssetDownloader
 {
     private const int DefaultBufferSize = 81_920;
 
-    private readonly HttpClient _httpClient;
+    private readonly ReleaseAssetRequestClient _requestClient;
     private readonly int _bufferSize;
     private readonly Action<string, string> _commitFile;
+    private readonly DownloadRetryOptions _retryOptions;
+    private readonly IDownloadDelay _delay;
+    private readonly Func<double> _jitterSource;
 
     /// <summary>Creates a downloader that borrows the supplied HTTP client.</summary>
     public AssetDownloader(HttpClient httpClient)
-        : this(httpClient, DefaultBufferSize, CommitFile)
+        : this(httpClient, new DownloadRetryOptions())
+    {
+    }
+
+    /// <summary>Creates a downloader with configurable transient-failure retries.</summary>
+    public AssetDownloader(HttpClient httpClient, DownloadRetryOptions retryOptions)
+        : this(
+            new ReleaseAssetRequestClient(httpClient),
+            DefaultBufferSize,
+            CommitFile,
+            retryOptions ?? throw new ArgumentNullException(nameof(retryOptions)))
     {
     }
 
@@ -23,8 +36,39 @@ public sealed class AssetDownloader
         HttpClient httpClient,
         int bufferSize,
         Action<string, string>? commitFile = null)
+        : this(
+            new ReleaseAssetRequestClient(httpClient),
+            bufferSize,
+            commitFile)
     {
-        ArgumentNullException.ThrowIfNull(httpClient);
+    }
+
+    internal AssetDownloader(
+        HttpClient httpClient,
+        int bufferSize,
+        Action<string, string>? commitFile,
+        DownloadRetryOptions retryOptions,
+        IDownloadDelay delay,
+        Func<double> jitterSource)
+        : this(
+            new ReleaseAssetRequestClient(httpClient),
+            bufferSize,
+            commitFile,
+            retryOptions,
+            delay,
+            jitterSource)
+    {
+    }
+
+    internal AssetDownloader(
+        ReleaseAssetRequestClient requestClient,
+        int bufferSize = DefaultBufferSize,
+        Action<string, string>? commitFile = null,
+        DownloadRetryOptions? retryOptions = null,
+        IDownloadDelay? delay = null,
+        Func<double>? jitterSource = null)
+    {
+        ArgumentNullException.ThrowIfNull(requestClient);
 
         if (bufferSize <= 0)
         {
@@ -34,9 +78,15 @@ public sealed class AssetDownloader
                 "The download buffer size must be positive.");
         }
 
-        _httpClient = httpClient;
+        retryOptions ??= new DownloadRetryOptions();
+        retryOptions.Validate();
+
+        _requestClient = requestClient;
         _bufferSize = bufferSize;
         _commitFile = commitFile ?? CommitFile;
+        _retryOptions = retryOptions;
+        _delay = delay ?? SystemDownloadDelay.Instance;
+        _jitterSource = jitterSource ?? Random.Shared.NextDouble;
     }
 
     /// <summary>
@@ -50,9 +100,9 @@ public sealed class AssetDownloader
     {
         ArgumentNullException.ThrowIfNull(asset);
 
-        if (!IsSupportedDownloadUri(asset.DownloadUrl))
+        if (!_requestClient.TryCreatePlan(asset, out var requestPlan, out var requestValidationMessage))
         {
-            return InvalidConfiguration("The asset download URL must use HTTP or HTTPS.");
+            return InvalidConfiguration(requestValidationMessage);
         }
 
         if (!TryResolveDestinationPath(
@@ -68,28 +118,80 @@ public sealed class AssetDownloader
             return Canceled(new OperationCanceledException(cancellationToken));
         }
 
+        for (var retryNumber = 0; ;)
+        {
+            var attempt = await DownloadOnceAsync(
+                    asset,
+                    requestPlan,
+                    resolvedDestinationPath,
+                    progress,
+                    cancellationToken)
+                .ConfigureAwait(false);
+
+            if (attempt.Result.IsSuccess ||
+                !attempt.IsTransient ||
+                retryNumber >= _retryOptions.MaxRetryAttempts)
+            {
+                return attempt.Result;
+            }
+
+            retryNumber++;
+            var retryDelay = CalculateRetryDelay(retryNumber);
+            _retryOptions.RetryProgress?.Report(
+                new DownloadRetryAttempt(
+                    retryNumber,
+                    _retryOptions.MaxRetryAttempts,
+                    retryDelay,
+                    attempt.StatusCode,
+                    attempt.Exception));
+
+            try
+            {
+                await _delay.DelayAsync(retryDelay, cancellationToken).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException exception) when (cancellationToken.IsCancellationRequested)
+            {
+                return Canceled(exception);
+            }
+            catch (OperationCanceledException exception)
+            {
+                return DownloadFailure("The retry delay was canceled internally.", exception);
+            }
+        }
+    }
+
+    private async Task<DownloadAttemptOutcome> DownloadOnceAsync(
+        ReleaseAsset asset,
+        ReleaseAssetRequestPlan requestPlan,
+        string resolvedDestinationPath,
+        IProgress<DownloadProgress>? progress,
+        CancellationToken cancellationToken)
+    {
         string? temporaryFilePath = null;
 
         try
         {
-            using var request = new HttpRequestMessage(HttpMethod.Get, asset.DownloadUrl);
-            using var response = await _httpClient.SendAsync(
-                request,
-                HttpCompletionOption.ResponseHeadersRead,
-                cancellationToken).ConfigureAwait(false);
+            using var assetResponse = await SendAssetRequestAsync(
+                    requestPlan,
+                    cancellationToken)
+                .ConfigureAwait(false);
+            var response = assetResponse.Response;
 
             if (!response.IsSuccessStatusCode)
             {
-                return DownloadFailure(
-                    $"The asset request returned HTTP status {(int)response.StatusCode} ({response.ReasonPhrase}).");
+                return new DownloadAttemptOutcome(
+                    HttpFailure(response, assetResponse.UsedAuthentication),
+                    IsTransientStatusCode(response.StatusCode),
+                    response.StatusCode);
             }
 
             var destinationDirectory = Path.GetDirectoryName(resolvedDestinationPath)!;
             temporaryFilePath = CreateTemporaryFilePath(destinationDirectory);
             var totalBytes = response.Content.Headers.ContentLength;
 
-            await using var sourceStream = await response.Content
-                .ReadAsStreamAsync(cancellationToken)
+            await using var sourceStream = await OpenResponseStreamAsync(
+                    response.Content,
+                    cancellationToken)
                 .ConfigureAwait(false);
 
             long bytesDownloaded;
@@ -115,29 +217,79 @@ public sealed class AssetDownloader
             _commitFile(temporaryFilePath, resolvedDestinationPath);
             temporaryFilePath = null;
 
-            return UpdateResult<DownloadResult>.Success(
+            return DownloadAttemptOutcome.Success(
                 new DownloadResult(asset, resolvedDestinationPath, bytesDownloaded));
         }
         catch (OperationCanceledException exception) when (cancellationToken.IsCancellationRequested)
         {
-            return Canceled(exception);
+            return DownloadAttemptOutcome.Permanent(Canceled(exception));
         }
         catch (OperationCanceledException exception)
         {
-            return DownloadFailure("The asset download timed out or was canceled internally.", exception);
+            return DownloadAttemptOutcome.Permanent(
+                DownloadFailure("The asset download timed out or was canceled internally.", exception));
+        }
+        catch (PermanentAssetRequestException exception)
+        {
+            return DownloadAttemptOutcome.Permanent(
+                DownloadFailure("The asset request failed due to a network error.", exception));
+        }
+        catch (DownloadNetworkException exception)
+        {
+            return DownloadAttemptOutcome.Transient(
+                DownloadFailure(exception.Message, exception.InnerException),
+                exception.InnerException);
         }
         catch (HttpRequestException exception)
         {
-            return DownloadFailure("The asset request failed due to a network error.", exception);
+            var failure = DownloadFailure("The asset request failed due to a network error.", exception);
+            return IsTransientHttpRequestException(exception)
+                ? DownloadAttemptOutcome.Transient(failure, exception, exception.StatusCode)
+                : DownloadAttemptOutcome.Permanent(failure);
         }
         catch (Exception exception) when (
             exception is IOException or UnauthorizedAccessException or NotSupportedException)
         {
-            return DownloadFailure("The asset could not be written to the destination file.", exception);
+            return DownloadAttemptOutcome.Permanent(
+                DownloadFailure("The asset could not be written to the destination file.", exception));
         }
         finally
         {
             TryDeleteTemporaryFile(temporaryFilePath);
+        }
+    }
+
+    private static async Task<Stream> OpenResponseStreamAsync(
+        HttpContent content,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            return await content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception exception) when (exception is HttpRequestException or IOException)
+        {
+            throw new DownloadNetworkException(
+                "The asset response stream failed due to a network error.",
+                exception);
+        }
+    }
+
+    private async Task<ReleaseAssetResponse> SendAssetRequestAsync(
+        ReleaseAssetRequestPlan requestPlan,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            return await _requestClient
+                .SendAsync(requestPlan, cancellationToken)
+                .ConfigureAwait(false);
+        }
+        catch (IOException exception)
+        {
+            throw new DownloadNetworkException(
+                "The asset request failed due to a network error.",
+                exception);
         }
     }
 
@@ -157,9 +309,19 @@ public sealed class AssetDownloader
 
             while (true)
             {
-                var bytesRead = await source
-                    .ReadAsync(buffer.AsMemory(0, _bufferSize), cancellationToken)
-                    .ConfigureAwait(false);
+                int bytesRead;
+                try
+                {
+                    bytesRead = await source
+                        .ReadAsync(buffer.AsMemory(0, _bufferSize), cancellationToken)
+                        .ConfigureAwait(false);
+                }
+                catch (Exception exception) when (exception is HttpRequestException or IOException)
+                {
+                    throw new DownloadNetworkException(
+                        "The asset response stream failed due to a network error.",
+                        exception);
+                }
 
                 if (bytesRead == 0)
                 {
@@ -242,11 +404,45 @@ public sealed class AssetDownloader
         }
     }
 
-    private static bool IsSupportedDownloadUri(Uri uri) =>
-        uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps;
-
     private static string CreateTemporaryFilePath(string destinationDirectory) =>
         Path.Combine(destinationDirectory, $".updatekit-{Guid.NewGuid():N}.tmp");
+
+    private TimeSpan CalculateRetryDelay(int retryNumber)
+    {
+        var exponentialMultiplier = Math.Pow(2d, retryNumber - 1);
+        var boundedTicks = Math.Min(
+            _retryOptions.MaximumDelay.Ticks,
+            _retryOptions.InitialDelay.Ticks * exponentialMultiplier);
+
+        if (_retryOptions.JitterFactor > 0d && boundedTicks > 0d)
+        {
+            var sample = _jitterSource();
+            if (!double.IsFinite(sample))
+            {
+                sample = 0.5d;
+            }
+
+            sample = Math.Clamp(sample, 0d, 1d);
+            var jitterMultiplier =
+                1d + ((sample * 2d) - 1d) * _retryOptions.JitterFactor;
+            boundedTicks = Math.Min(
+                _retryOptions.MaximumDelay.Ticks,
+                boundedTicks * jitterMultiplier);
+        }
+
+        return TimeSpan.FromTicks((long)Math.Round(boundedTicks));
+    }
+
+    private static bool IsTransientHttpRequestException(HttpRequestException exception) =>
+        exception.StatusCode is null || IsTransientStatusCode(exception.StatusCode.Value);
+
+    private static bool IsTransientStatusCode(HttpStatusCode statusCode) =>
+        statusCode is HttpStatusCode.RequestTimeout or
+            HttpStatusCode.TooManyRequests or
+            HttpStatusCode.InternalServerError or
+            HttpStatusCode.BadGateway or
+            HttpStatusCode.ServiceUnavailable or
+            HttpStatusCode.GatewayTimeout;
 
     private static void CommitFile(string temporaryFilePath, string destinationFilePath)
     {
@@ -298,4 +494,48 @@ public sealed class AssetDownloader
         Exception? exception = null) =>
         UpdateResult<DownloadResult>.Failure(
             new UpdateError(UpdateErrorCode.DownloadFailed, message, exception));
+
+    private static UpdateResult<DownloadResult> HttpFailure(
+        HttpResponseMessage response,
+        bool usedAuthentication)
+    {
+        if (usedAuthentication &&
+            response.StatusCode is HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden)
+        {
+            return UpdateResult<DownloadResult>.Failure(
+                new UpdateError(
+                    UpdateErrorCode.AuthenticationFailed,
+                    "GitHub rejected the supplied credentials or release-asset permissions."));
+        }
+
+        return DownloadFailure(
+            $"The asset request returned HTTP status {(int)response.StatusCode} ({response.ReasonPhrase}).");
+    }
+
+    private sealed record DownloadAttemptOutcome(
+        UpdateResult<DownloadResult> Result,
+        bool IsTransient,
+        HttpStatusCode? StatusCode = null,
+        Exception? Exception = null)
+    {
+        public static DownloadAttemptOutcome Success(DownloadResult result) =>
+            new(UpdateResult<DownloadResult>.Success(result), IsTransient: false);
+
+        public static DownloadAttemptOutcome Permanent(UpdateResult<DownloadResult> result) =>
+            new(result, IsTransient: false);
+
+        public static DownloadAttemptOutcome Transient(
+            UpdateResult<DownloadResult> result,
+            Exception? exception = null,
+            HttpStatusCode? statusCode = null) =>
+            new(result, IsTransient: true, statusCode, exception);
+    }
+
+    private sealed class DownloadNetworkException : Exception
+    {
+        public DownloadNetworkException(string message, Exception innerException)
+            : base(message, innerException)
+        {
+        }
+    }
 }

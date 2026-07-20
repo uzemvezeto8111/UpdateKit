@@ -17,7 +17,9 @@ public sealed class UpdateClientOptions
     /// <summary>Gets the GitHub repository name.</summary>
     public string RepositoryName { get; init; } = string.Empty;
 
-    /// <summary>Gets an optional bearer token used for GitHub API release requests.</summary>
+    /// <summary>
+    /// Gets an optional bearer token used only for verified GitHub API release and asset requests.
+    /// </summary>
     public string? AccessToken { get; init; }
 
     /// <summary>Gets whether published prerelease versions are eligible.</summary>
@@ -28,6 +30,9 @@ public sealed class UpdateClientOptions
 
     /// <summary>Gets the timeout applied independently to each GitHub API page request.</summary>
     public TimeSpan RequestTimeout { get; init; } = DefaultRequestTimeout;
+
+    /// <summary>Gets transient download retry settings. The default performs no retries.</summary>
+    public DownloadRetryOptions DownloadRetry { get; init; } = new();
 
     /// <summary>Returns all configuration validation messages without throwing.</summary>
     public IReadOnlyList<string> GetValidationErrors()
@@ -63,6 +68,18 @@ public sealed class UpdateClientOptions
         {
             errors.Add(
                 $"{nameof(RequestTimeout)} must be greater than zero and no greater than {int.MaxValue} milliseconds.");
+        }
+
+        if (DownloadRetry is null)
+        {
+            errors.Add($"{nameof(DownloadRetry)} is required.");
+        }
+        else
+        {
+            foreach (var retryError in DownloadRetry.GetValidationErrors())
+            {
+                errors.Add($"{nameof(DownloadRetry)}.{retryError}");
+            }
         }
 
         return new ReadOnlyCollection<string>(errors);

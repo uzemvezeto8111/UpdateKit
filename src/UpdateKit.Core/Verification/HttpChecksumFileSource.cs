@@ -7,11 +7,16 @@ internal sealed class HttpChecksumFileSource
     private static readonly UTF8Encoding StrictUtf8 =
         new(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
 
-    private readonly HttpClient _httpClient;
+    private readonly ReleaseAssetRequestClient _requestClient;
 
     public HttpChecksumFileSource(HttpClient httpClient)
+        : this(new ReleaseAssetRequestClient(httpClient))
     {
-        _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
+    }
+
+    public HttpChecksumFileSource(ReleaseAssetRequestClient requestClient)
+    {
+        _requestClient = requestClient ?? throw new ArgumentNullException(nameof(requestClient));
     }
 
     public async Task<UpdateResult<string>> GetContentAsync(
@@ -20,11 +25,14 @@ internal sealed class HttpChecksumFileSource
     {
         ArgumentNullException.ThrowIfNull(checksumAsset);
 
-        if (!IsSupportedUri(checksumAsset.DownloadUrl))
+        if (!_requestClient.TryCreatePlan(
+                checksumAsset,
+                out var requestPlan,
+                out var requestValidationMessage))
         {
             return Failure(
                 UpdateErrorCode.InvalidConfiguration,
-                "The checksum-file URL must use HTTP or HTTPS.");
+                requestValidationMessage);
         }
 
         if (cancellationToken.IsCancellationRequested)
@@ -34,14 +42,23 @@ internal sealed class HttpChecksumFileSource
 
         try
         {
-            using var request = new HttpRequestMessage(HttpMethod.Get, checksumAsset.DownloadUrl);
-            using var response = await _httpClient.SendAsync(
-                request,
-                HttpCompletionOption.ResponseHeadersRead,
-                cancellationToken).ConfigureAwait(false);
+            using var assetResponse = await _requestClient
+                .SendAsync(requestPlan, cancellationToken)
+                .ConfigureAwait(false);
+            var response = assetResponse.Response;
 
             if (!response.IsSuccessStatusCode)
             {
+                if (assetResponse.UsedAuthentication &&
+                    response.StatusCode is (
+                        System.Net.HttpStatusCode.Unauthorized or
+                        System.Net.HttpStatusCode.Forbidden))
+                {
+                    return Failure(
+                        UpdateErrorCode.AuthenticationFailed,
+                        "GitHub rejected the supplied credentials or checksum-asset permissions.");
+                }
+
                 return Failure(
                     UpdateErrorCode.NetworkError,
                     $"The checksum-file request returned HTTP status {(int)response.StatusCode} ({response.ReasonPhrase}).");
@@ -94,9 +111,6 @@ internal sealed class HttpChecksumFileSource
                 exception);
         }
     }
-
-    private static bool IsSupportedUri(Uri uri) =>
-        uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps;
 
     private static UpdateResult<string> Canceled(OperationCanceledException exception) =>
         Failure(

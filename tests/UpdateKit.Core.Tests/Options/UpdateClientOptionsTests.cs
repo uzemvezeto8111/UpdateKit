@@ -11,6 +11,8 @@ public sealed class UpdateClientOptionsTests
         Assert.Equal(UpdateClientOptions.DefaultRequestTimeout, options.RequestTimeout);
         Assert.False(options.IncludePrereleases);
         Assert.Null(options.AccessToken);
+        Assert.NotNull(options.DownloadRetry);
+        Assert.Equal(0, options.DownloadRetry.MaxRetryAttempts);
     }
 
     [Fact]

@@ -3,6 +3,7 @@ using System.Globalization;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Text.Json;
+using UpdateKit.Internal;
 
 namespace UpdateKit.GitHub;
 
@@ -10,7 +11,6 @@ internal sealed class GitHubReleaseSource : IGitHubReleaseSource
 {
     internal const string ApiVersion = "2026-03-10";
 
-    private static readonly Uri ApiBaseAddress = new("https://api.github.com/");
     private static readonly MediaTypeWithQualityHeaderValue GitHubJsonMediaType =
         new("application/vnd.github+json");
 
@@ -126,7 +126,7 @@ internal sealed class GitHubReleaseSource : IGitHubReleaseSource
     {
         var owner = Uri.EscapeDataString(_repositoryOwner);
         var repository = Uri.EscapeDataString(_repositoryName);
-        return new Uri(ApiBaseAddress, $"repos/{owner}/{repository}/releases?per_page=100");
+        return new Uri(GitHubApiEndpoint.BaseAddress, $"repos/{owner}/{repository}/releases?per_page=100");
     }
 
     private HttpRequestMessage CreateRequest(Uri requestUri)
@@ -176,7 +176,7 @@ internal sealed class GitHubReleaseSource : IGitHubReleaseSource
         }
     }
 
-    private static ReleaseInfo MapRelease(GitHubReleaseDto release)
+    private ReleaseInfo MapRelease(GitHubReleaseDto release)
     {
         if (release.Id is not > 0 ||
             string.IsNullOrWhiteSpace(release.TagName) ||
@@ -201,7 +201,7 @@ internal sealed class GitHubReleaseSource : IGitHubReleaseSource
             assets);
     }
 
-    private static ReleaseAsset MapAsset(GitHubReleaseAssetDto asset)
+    private ReleaseAsset MapAsset(GitHubReleaseAssetDto asset)
     {
         if (string.IsNullOrWhiteSpace(asset.Name) ||
             !Uri.TryCreate(asset.BrowserDownloadUrl, UriKind.Absolute, out var downloadUrl) ||
@@ -210,7 +210,25 @@ internal sealed class GitHubReleaseSource : IGitHubReleaseSource
             throw new JsonException("A release asset is missing one or more required fields.");
         }
 
-        return new ReleaseAsset(asset.Name, downloadUrl, asset.Size.Value, asset.ContentType);
+        var result = new ReleaseAsset(asset.Name, downloadUrl, asset.Size.Value, asset.ContentType);
+
+        if (asset.ApiUrl is not null)
+        {
+            if (asset.Id is not > 0 ||
+                !Uri.TryCreate(asset.ApiUrl, UriKind.Absolute, out var apiUrl) ||
+                !GitHubApiEndpoint.IsReleaseAsset(
+                    apiUrl,
+                    _repositoryOwner,
+                    _repositoryName,
+                    asset.Id))
+            {
+                throw new JsonException("A release asset contains an invalid GitHub API URL.");
+            }
+
+            ReleaseAssetMetadata.SetGitHubApiDownloadUri(result, apiUrl);
+        }
+
+        return result;
     }
 
     private static Uri? GetNextPageUri(HttpResponseHeaders headers)
@@ -237,7 +255,7 @@ internal sealed class GitHubReleaseSource : IGitHubReleaseSource
                     uriPart[0] != '<' ||
                     uriPart[^1] != '>' ||
                     !Uri.TryCreate(uriPart[1..^1], UriKind.Absolute, out var nextPage) ||
-                    !IsTrustedApiUri(nextPage))
+                    !GitHubApiEndpoint.IsTrusted(nextPage))
                 {
                     throw new JsonException("The GitHub pagination link is invalid.");
                 }
@@ -260,11 +278,6 @@ internal sealed class GitHubReleaseSource : IGitHubReleaseSource
         var relations = value[relationPrefix.Length..].Trim('"').Split(' ');
         return relations.Contains("next", StringComparer.OrdinalIgnoreCase);
     }
-
-    private static bool IsTrustedApiUri(Uri uri) =>
-        uri.Scheme == Uri.UriSchemeHttps &&
-        uri.IsDefaultPort &&
-        string.Equals(uri.Host, ApiBaseAddress.Host, StringComparison.OrdinalIgnoreCase);
 
     private static async Task<UpdateError> MapHttpErrorAsync(
         HttpResponseMessage response,

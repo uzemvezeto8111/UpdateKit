@@ -20,9 +20,16 @@ public sealed class UpdateClient
         ArgumentNullException.ThrowIfNull(options);
         options.Validate();
 
+        var assetRequestClient = new ReleaseAssetRequestClient(
+            httpClient,
+            options.AccessToken,
+            options.UserAgent);
+
         _releaseSource = new GitHubReleaseSource(httpClient, options);
-        _assetDownloader = new AssetDownloader(httpClient);
-        _sha256Verifier = new Sha256Verifier(httpClient);
+        _assetDownloader = new AssetDownloader(
+            assetRequestClient,
+            retryOptions: options.DownloadRetry);
+        _sha256Verifier = new Sha256Verifier(assetRequestClient);
     }
 
     internal UpdateClient(
@@ -114,7 +121,10 @@ public sealed class UpdateClient
         Func<ReleaseAsset, bool>? predicate) =>
         AssetSelector.ByPredicate(release, predicate);
 
-    /// <summary>Streams an asset to an absolute destination path with optional progress and cancellation.</summary>
+    /// <summary>
+    /// Streams an asset to an absolute destination path with optional progress and cancellation.
+    /// Configured credentials are scoped to verified GitHub release-asset API requests.
+    /// </summary>
     public Task<UpdateResult<DownloadResult>> DownloadAsync(
         ReleaseAsset asset,
         string? destinationFilePath,

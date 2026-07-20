@@ -14,7 +14,7 @@ public sealed class Sha256Verifier
 
     /// <summary>Creates a verifier whose checksum-file requests borrow the supplied HTTP client.</summary>
     public Sha256Verifier(HttpClient httpClient)
-        : this(httpClient, OpenFile, File.Delete)
+        : this(new ReleaseAssetRequestClient(httpClient), OpenFile, File.Delete)
     {
     }
 
@@ -22,10 +22,21 @@ public sealed class Sha256Verifier
         HttpClient httpClient,
         Func<string, Stream>? openFile,
         Action<string>? deleteFile)
+        : this(
+            new ReleaseAssetRequestClient(httpClient),
+            openFile ?? throw new ArgumentNullException(nameof(openFile)),
+            deleteFile ?? throw new ArgumentNullException(nameof(deleteFile)))
     {
-        _checksumFileSource = new HttpChecksumFileSource(httpClient);
-        _openFile = openFile ?? throw new ArgumentNullException(nameof(openFile));
-        _deleteFile = deleteFile ?? throw new ArgumentNullException(nameof(deleteFile));
+    }
+
+    internal Sha256Verifier(
+        ReleaseAssetRequestClient requestClient,
+        Func<string, Stream>? openFile = null,
+        Action<string>? deleteFile = null)
+    {
+        _checksumFileSource = new HttpChecksumFileSource(requestClient);
+        _openFile = openFile ?? OpenFile;
+        _deleteFile = deleteFile ?? File.Delete;
     }
 
     /// <summary>Verifies a download against a 64-character hexadecimal SHA-256 checksum.</summary>

@@ -4,6 +4,7 @@ using System.Text;
 using System.Text.Json;
 using UpdateKit.Core.Tests.Http;
 using UpdateKit.GitHub;
+using UpdateKit.Internal;
 
 namespace UpdateKit.Core.Tests.GitHub;
 
@@ -52,6 +53,10 @@ public sealed class GitHubReleaseSourceTests
             asset.DownloadUrl);
         Assert.Equal(1024, asset.Size);
         Assert.Equal("application/zip", asset.ContentType);
+        Assert.True(ReleaseAssetMetadata.TryGetGitHubApiDownloadUri(asset, out var apiDownloadUri));
+        Assert.Equal(
+            new Uri("https://api.github.com/repos/octocat/Hello-World/releases/assets/1001"),
+            apiDownloadUri);
     }
 
     [Fact]
@@ -364,6 +369,8 @@ public sealed class GitHubReleaseSourceTests
     private static object CreateAssetPayload(long size = 1024) =>
         new
         {
+            id = 1001,
+            url = "https://api.github.com/repos/octocat/Hello-World/releases/assets/1001",
             name = "UpdateKit.zip",
             browser_download_url =
                 "https://github.com/octocat/Hello-World/releases/download/v1.2.3/UpdateKit.zip",

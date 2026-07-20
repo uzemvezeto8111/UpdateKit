@@ -34,6 +34,12 @@ internal sealed class GitHubReleaseDto
 
 internal sealed class GitHubReleaseAssetDto
 {
+    [JsonPropertyName("id")]
+    public long? Id { get; init; }
+
+    [JsonPropertyName("url")]
+    public string? ApiUrl { get; init; }
+
     [JsonPropertyName("name")]
     public string? Name { get; init; }
 
