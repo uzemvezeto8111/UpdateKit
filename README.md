@@ -47,14 +47,6 @@ The repository is split into three libraries and three practical samples:
 
 *After a successful streamed transfer, the dialog shows the final destination, completed byte count, and a clear completion state.*
 
-### Animated workflow
-
-<!-- Planned workflow animation. After capture, remove its fallback paragraph and uncomment this line:
-![UpdateKit update workflow from checking through successful download](docs/assets/update-flow-demo.gif)
--->
-
-> **Demo pending:** the animation will show the real sample moving through check, update found, download, and successful completion. Capture and export instructions are in [CAPTURE_GUIDE.md](docs/assets/CAPTURE_GUIDE.md).
-
 ## Supported platforms
 
 | Project | Target | Runtime support |

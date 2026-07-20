@@ -9,8 +9,7 @@ The public assets are:
 | `winforms-example-configuration.png` | Present | Full-window example configuration screen |
 | `winforms-update-available.png` | Present | Reusable dialog in the update-available state |
 | `winforms-download-complete.png` | Present | Reusable dialog after a successful download |
-| `update-flow-demo.gif` | Pending | Short check → update found → download → completion workflow |
 
-The root README actively references all three PNG files through relative paths. The animated GIF remains inside a Markdown comment with descriptive fallback text until an authentic recording is added, preventing a broken image.
+The root README actively references all three PNG files through relative paths.
 
-Follow [CAPTURE_GUIDE.md](CAPTURE_GUIDE.md) for capture provenance, recapture guidance, GIF export settings, filenames, and README activation steps.
+Follow [CAPTURE_GUIDE.md](CAPTURE_GUIDE.md) for capture provenance, recapture guidance, and filenames.

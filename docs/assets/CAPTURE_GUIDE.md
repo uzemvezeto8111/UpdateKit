@@ -1,6 +1,6 @@
 # UpdateKit media capture guide
 
-The repository now contains three authentic WinForms screenshots. Use this guide when they need to be recaptured and to create the remaining animated workflow. Captures must come from a working build and a genuine GitHub release response—do not construct, composite, or generate replacement UI.
+The repository contains three authentic WinForms screenshots. Use this guide when they need to be recaptured. Captures must come from a working build and a genuine GitHub release response—do not construct, composite, or generate replacement UI.
 
 ## Final files
 
@@ -10,10 +10,9 @@ Save the finished media directly in this directory with these exact names:
 docs/assets/winforms-example-configuration.png
 docs/assets/winforms-update-available.png
 docs/assets/winforms-download-complete.png
-docs/assets/update-flow-demo.gif
 ```
 
-Use PNG for all three still images. Do not substitute JPEG, WebP, or renamed formats; keeping the names stable prevents README churn. The three PNG files are complete, while the GIF remains pending.
+Use PNG for all three images. Do not substitute JPEG, WebP, or renamed formats; keeping the names stable prevents README churn.
 
 ## 1. Prepare an authentic release
 
@@ -95,58 +94,11 @@ The update-available screenshot should be captured before Download is selected. 
 
 The completed state must come from a successful real transfer. Do not edit the progress value, byte count, destination, or status text.
 
-## 7. Record `update-flow-demo.gif`
-
-Use a recorder that can export an animated GIF, such as ScreenToGif. A Windows Snipping Tool screen recording is also suitable if you convert the resulting MP4 afterward.
-
-1. Use a fresh destination filename, or remove only the previous file in `C:\Users\Public\Documents\UpdateKit-Capture` before another take.
-2. Position the example so the modal dialog will be centered and fully inside a 960–1200 pixel-wide recording region.
-3. Record at 10–12 frames per second with the pointer visible.
-4. Start recording immediately before choosing **Check for updates** in the example.
-5. Preserve these real states in order:
-   - **Checking for updates…**
-   - **An update is available**
-   - **Downloading update…** after choosing **Download**
-   - **Update downloaded** with the completion path visible
-6. Pause for roughly one second on update-available and completion states, then stop recording.
-7. Trim only idle frames before the check and after completion. You may extend the display delay of an authentic progress or completion frame, but do not alter text, progress values, or UI content.
-8. Export as a looping GIF, 10–12 fps, maximum width 960 pixels, using an optimized palette. Aim for 5 MB or less while keeping labels readable.
-9. Save as `docs/assets/update-flow-demo.gif`.
-
-The NuGet package may download too quickly for several progress frames. That is acceptable if the authentic **Downloading update…** state is captured. For a longer transfer, use a genuine published UpdateKit asset such as a distributable sample archive; do not pad a file or simulate network output for presentation.
-
-If converting a Snipping Tool MP4 with `ffmpeg`, use a palette-based conversion:
-
-```powershell
-ffmpeg -i update-flow-demo.mp4 `
-  -vf "fps=10,scale=960:-1:flags=lanczos,palettegen" `
-  update-flow-palette.png
-
-ffmpeg -i update-flow-demo.mp4 -i update-flow-palette.png `
-  -lavfi "fps=10,scale=960:-1:flags=lanczos[x];[x][1:v]paletteuse=dither=bayer" `
-  docs/assets/update-flow-demo.gif
-```
-
-Delete the temporary MP4 and palette PNG after confirming the GIF. Do not commit those intermediate files.
-
-## 8. Enable the README media
-
-The root [README](../../README.md) actively references the three completed screenshots. The GIF reference remains inside an HTML comment. After adding the authentic GIF:
-
-1. Remove the surrounding `<!--` and `-->` markers for the GIF.
-2. Remove the matching `Demo pending` fallback paragraph.
-3. Keep the supplied alt text unchanged unless the captured content materially differs.
-4. Preview the README at desktop and narrow widths.
-5. Verify all links and run `git diff --check` before committing.
-
-Do not activate an image reference until its authentic media file exists.
-
 ## Final review checklist
 
 - [ ] All media comes from the Release build and a real GitHub response.
-- [ ] The filenames exactly match the four names at the top of this guide.
+- [ ] The filenames exactly match the three names at the top of this guide.
 - [ ] No token, private username, notification, or unrelated window is visible.
 - [ ] The three still images are crisp PNG files at their original capture resolution.
-- [ ] The GIF shows all four required states, loops cleanly, and remains readable.
 - [ ] The README contains no broken active image reference.
 - [ ] Only completed assets have had their README references enabled.
