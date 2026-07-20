@@ -36,6 +36,14 @@ internal static class SampleConfigurationValidator
             AccessToken = accessToken,
             IncludePrereleases = input.IncludePrereleases,
             UserAgent = "UpdateKit.Example.WinForms",
+            DownloadRetry = new DownloadRetryOptions
+            {
+                MaxRetryAttempts = input.MaximumRetryAttempts,
+                InitialDelay = TimeSpan.FromMilliseconds(input.RetryDelayMilliseconds),
+                MaximumDelay = TimeSpan.FromMilliseconds(Math.Max(
+                    input.RetryDelayMilliseconds,
+                    (int)DownloadRetryOptions.DefaultMaximumDelay.TotalMilliseconds)),
+            },
         };
         errors.AddRange(clientOptions.GetValidationErrors());
 
@@ -55,6 +63,11 @@ internal static class SampleConfigurationValidator
             verificationValue,
             errors);
 
+        if (input.DialogTheme is { } theme && !Enum.IsDefined(theme))
+        {
+            errors.Add("Choose a supported dialog theme.");
+        }
+
         if (errors.Count > 0)
         {
             return SampleConfigurationResult.Failure(errors);
@@ -71,7 +84,11 @@ internal static class SampleConfigurationValidator
                 assetSelectionValue,
                 Path.GetFullPath(destinationFilePath),
                 input.VerificationMode,
-                verificationValue));
+                verificationValue,
+                input.MaximumRetryAttempts,
+                input.RetryDelayMilliseconds,
+                input.DialogTheme,
+                input.ConfirmBeforeDownload));
     }
 
     private static void ValidateAssetSelection(

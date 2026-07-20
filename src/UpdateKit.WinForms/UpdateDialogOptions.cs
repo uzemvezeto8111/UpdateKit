@@ -35,6 +35,15 @@ public sealed class UpdateDialogOptions
     /// <summary>Gets whether the first display automatically starts an update check.</summary>
     public bool CheckForUpdateOnShown { get; init; } = true;
 
+    /// <summary>
+    /// Gets an optional theme for the dialog. A <see langword="null"/> value preserves
+    /// the platform-native appearance used by earlier UpdateKit versions.
+    /// </summary>
+    public ApplicationTheme? Theme { get; init; }
+
+    /// <summary>Gets whether the dialog asks the user to confirm before downloading.</summary>
+    public bool ConfirmBeforeDownload { get; init; }
+
     /// <summary>Gets an optional direct expected SHA-256 checksum.</summary>
     public string? ExpectedSha256 { get; init; }
 
@@ -52,6 +61,11 @@ public sealed class UpdateDialogOptions
         {
             throw new ArgumentException(
                 "Configure either a direct SHA-256 checksum or a checksum-file asset selector, not both.");
+        }
+
+        if (Theme is { } theme && !Enum.IsDefined(theme))
+        {
+            throw new ArgumentOutOfRangeException(nameof(Theme));
         }
     }
 }

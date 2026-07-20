@@ -12,7 +12,11 @@ internal sealed record SampleUpdateConfiguration(
     string AssetSelectionValue,
     string DestinationFilePath,
     SampleVerificationMode VerificationMode,
-    string? VerificationValue)
+    string? VerificationValue,
+    int MaximumRetryAttempts,
+    int RetryDelayMilliseconds,
+    ApplicationTheme? DialogTheme,
+    bool ConfirmBeforeDownload)
 {
     public UpdateClientOptions CreateClientOptions() =>
         new()
@@ -22,6 +26,14 @@ internal sealed record SampleUpdateConfiguration(
             AccessToken = AccessToken,
             IncludePrereleases = IncludePrereleases,
             UserAgent = "UpdateKit.Example.WinForms",
+            DownloadRetry = new DownloadRetryOptions
+            {
+                MaxRetryAttempts = MaximumRetryAttempts,
+                InitialDelay = TimeSpan.FromMilliseconds(RetryDelayMilliseconds),
+                MaximumDelay = TimeSpan.FromMilliseconds(Math.Max(
+                    RetryDelayMilliseconds,
+                    (int)DownloadRetryOptions.DefaultMaximumDelay.TotalMilliseconds)),
+            },
         };
 
     public UpdateDialogOptions CreateDialogOptions(UpdateClient client)
@@ -40,6 +52,8 @@ internal sealed record SampleUpdateConfiguration(
             assetSelector)
         {
             DialogTitle = "UpdateKit Example — Software Update",
+            Theme = DialogTheme,
+            ConfirmBeforeDownload = ConfirmBeforeDownload,
             ExpectedSha256 = VerificationMode == SampleVerificationMode.DirectSha256
                 ? VerificationValue
                 : null,

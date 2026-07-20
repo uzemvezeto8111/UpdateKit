@@ -40,6 +40,7 @@ public sealed class UpdateDialog : Form
         Font = SystemFonts.MessageBoxFont;
         _headingFont = new Font(Font, FontStyle.Bold);
         InitializeDialog();
+        ApplyConfiguredTheme();
         ApplyState(_controller.State);
     }
 
@@ -74,6 +75,7 @@ public sealed class UpdateDialog : Form
     protected override async void OnShown(EventArgs e)
     {
         base.OnShown(e);
+        ApplyConfiguredTheme();
         ApplyState(_controller.State);
 
         if (_shown)
@@ -333,8 +335,95 @@ public sealed class UpdateDialog : Form
         }
         else if (state.CanDownload)
         {
+            if (_options.ConfirmBeforeDownload && !ConfirmDownload())
+            {
+                return;
+            }
+
             await _controller.DownloadAsync();
         }
+    }
+
+    private bool ConfirmDownload()
+    {
+        using var dialog = new Form
+        {
+            Text = "Confirm download",
+            AccessibleName = "Confirm update download",
+            AutoScaleMode = AutoScaleMode.Dpi,
+            AutoSize = true,
+            AutoSizeMode = AutoSizeMode.GrowAndShrink,
+            Font = Font,
+            FormBorderStyle = FormBorderStyle.FixedDialog,
+            MaximizeBox = false,
+            MinimizeBox = false,
+            ShowInTaskbar = false,
+            StartPosition = FormStartPosition.CenterParent,
+        };
+
+        var message = new Label
+        {
+            AutoSize = true,
+            MaximumSize = new Size(440, 0),
+            Text = $"Download {_controller.State.SelectedAsset?.Name ?? "the selected update"} " +
+                $"to {_options.DestinationFilePath}?",
+            AccessibleName = "Download confirmation message",
+        };
+        var downloadButton = new Button
+        {
+            AutoSize = true,
+            MinimumSize = new Size(96, 30),
+            Text = "Download",
+            DialogResult = DialogResult.OK,
+        };
+        var cancelButton = new Button
+        {
+            AutoSize = true,
+            MinimumSize = new Size(88, 30),
+            Text = "Cancel",
+            DialogResult = DialogResult.Cancel,
+        };
+        var buttons = new FlowLayoutPanel
+        {
+            AutoSize = true,
+            Dock = DockStyle.Fill,
+            FlowDirection = FlowDirection.RightToLeft,
+            WrapContents = false,
+        };
+        buttons.Controls.Add(cancelButton);
+        buttons.Controls.Add(downloadButton);
+
+        var layout = new TableLayoutPanel
+        {
+            AutoSize = true,
+            ColumnCount = 1,
+            RowCount = 2,
+            Dock = DockStyle.Fill,
+            Padding = new Padding(18),
+        };
+        layout.Controls.Add(message, 0, 0);
+        layout.Controls.Add(buttons, 0, 1);
+        dialog.Controls.Add(layout);
+        dialog.AcceptButton = downloadButton;
+        dialog.CancelButton = cancelButton;
+
+        if (_options.Theme is { } theme)
+        {
+            WinFormsThemeManager.ApplyTheme(dialog, theme);
+        }
+
+        return dialog.ShowDialog(this) == DialogResult.OK;
+    }
+
+    private void ApplyConfiguredTheme()
+    {
+        if (_options.Theme is not { } theme)
+        {
+            return;
+        }
+
+        WinFormsThemeManager.ApplyTheme(this, theme);
+        WinFormsThemeManager.ApplyErrorStyle(_errorLabel, theme);
     }
 
     private void Controller_StateChanged(UpdateDialogViewState state)
@@ -393,6 +482,7 @@ public sealed class UpdateDialog : Form
         ApplyProgress(state);
         ApplyButtons(state);
         UseWaitCursor = state.IsBusy;
+        ApplyConfiguredTheme();
     }
 
     private void ApplyProgress(UpdateDialogViewState state)

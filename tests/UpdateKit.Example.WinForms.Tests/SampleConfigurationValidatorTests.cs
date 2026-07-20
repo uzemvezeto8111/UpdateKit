@@ -46,6 +46,47 @@ public sealed class SampleConfigurationValidatorTests
     }
 
     [Fact]
+    public void Validate_RetryAndThemeSettings_MapToExistingPublicOptions()
+    {
+        using var directory = new TemporaryDirectory();
+        var input = CreateValidInput(directory) with
+        {
+            MaximumRetryAttempts = 4,
+            RetryDelayMilliseconds = 2_500,
+            DialogTheme = UpdateKit.WinForms.ApplicationTheme.Dark,
+            ConfirmBeforeDownload = true,
+        };
+
+        var configuration = AssertValid(input);
+        var clientOptions = configuration.CreateClientOptions();
+        using var httpClient = CreateNetworkRejectingClient();
+        var client = new UpdateClient(httpClient, clientOptions);
+        var dialogOptions = configuration.CreateDialogOptions(client);
+
+        Assert.Equal(4, clientOptions.DownloadRetry.MaxRetryAttempts);
+        Assert.Equal(TimeSpan.FromMilliseconds(2_500), clientOptions.DownloadRetry.InitialDelay);
+        Assert.Equal(UpdateKit.WinForms.ApplicationTheme.Dark, dialogOptions.Theme);
+        Assert.True(dialogOptions.ConfirmBeforeDownload);
+    }
+
+    [Fact]
+    public void Validate_InvalidRetryAndThemeSettings_ReturnsErrors()
+    {
+        using var directory = new TemporaryDirectory();
+        var result = SampleConfigurationValidator.Validate(CreateValidInput(directory) with
+        {
+            MaximumRetryAttempts = -1,
+            RetryDelayMilliseconds = -10,
+            DialogTheme = (UpdateKit.WinForms.ApplicationTheme)99,
+        });
+
+        Assert.False(result.IsValid);
+        Assert.Contains(result.Errors, error => error.Contains("MaxRetryAttempts", StringComparison.Ordinal));
+        Assert.Contains(result.Errors, error => error.Contains("InitialDelay", StringComparison.Ordinal));
+        Assert.Contains("Choose a supported dialog theme.", result.Errors);
+    }
+
+    [Fact]
     public void CreateDialogOptions_ExtensionSelection_DelegatesToUpdateClient()
     {
         using var directory = new TemporaryDirectory();

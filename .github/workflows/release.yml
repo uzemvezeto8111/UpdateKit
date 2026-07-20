@@ -15,7 +15,7 @@ jobs:
   build-test-pack:
     name: Build, test, and pack
     runs-on: windows-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     permissions:
       contents: read
     outputs:
@@ -36,6 +36,9 @@ jobs:
       - name: Restore
         run: dotnet restore UpdateKit.sln
 
+      - name: Restore Windows x64 publish assets
+        run: dotnet restore samples/UpdateKit.Example.WinForms/UpdateKit.Example.WinForms.csproj --runtime win-x64
+
       - name: Verify tag and package versions
         shell: pwsh
         env:
@@ -48,7 +51,7 @@ jobs:
       - name: Test
         run: dotnet test UpdateKit.sln --configuration Release --no-build --no-restore --logger "trx;LogFilePrefix=release"
 
-      - name: Pack and checksum release assets
+      - name: Pack, publish, and checksum release assets
         id: prepare
         shell: pwsh
         env:
@@ -59,7 +62,11 @@ jobs:
         uses: actions/upload-artifact@v7.0.1
         with:
           name: release-assets-${{ steps.prepare.outputs.version }}
-          path: artifacts/release/*
+          path: |
+            artifacts/release/UpdateKit.Core.*.nupkg
+            artifacts/release/UpdateKit.WinForms.*.nupkg
+            artifacts/release/UpdateKit.Example.WinForms-win-x64.zip
+            artifacts/release/SHA256SUMS.txt
           if-no-files-found: error
           retention-days: 1
 
@@ -98,6 +105,7 @@ jobs:
 
             gh release download "$RELEASE_TAG" \
               --pattern '*.nupkg' \
+              --pattern 'UpdateKit.Example.WinForms-win-x64.zip' \
               --pattern 'SHA256SUMS.txt' \
               --dir existing-assets \
               --repo "$GITHUB_REPOSITORY"

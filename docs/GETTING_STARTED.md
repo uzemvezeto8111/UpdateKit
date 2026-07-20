@@ -205,6 +205,8 @@ var options = new UpdateDialogOptions(
 {
     DialogTitle = "MyProduct Update",
     CheckForUpdateOnShown = true,
+    Theme = ApplicationTheme.System,
+    ConfirmBeforeDownload = true,
     ChecksumAssetSelector = release =>
         client.SelectAssetByExactName(release, "SHA256SUMS.txt"),
 };
@@ -223,6 +225,20 @@ else if (dialog.LastError is { } error)
 ```
 
 Use `ExpectedSha256` instead of `ChecksumAssetSelector` for a direct checksum. A dialog instance is single-use. Create a new instance each time, show it with the host form as owner, and dispose it afterward. It prevents duplicate operations and safely cancels active work when the user closes it.
+
+`Theme` is optional. Leaving it unset retains the native appearance used by existing hosts. `ApplicationTheme.System` resolves the current Windows application theme, while `Light` and `Dark` select explicit UpdateKit palettes. Hosts may also call `WinFormsThemeManager.ApplyTheme(formOrControl, theme)` to apply the same centralized palette to their own WinForms tree. `ConfirmBeforeDownload` is also opt-in and defaults to `false` for backward compatibility.
+
+### Example settings and persistence
+
+Run the full example and open **Tools > Settings** to explore persisted host preferences:
+
+```powershell
+dotnet run --project samples/UpdateKit.Example.WinForms/UpdateKit.Example.WinForms.csproj
+```
+
+To create a self-contained, single-file Windows x64 build for users who do not have .NET installed, run `eng\publish-example.cmd` from the repository root. It publishes the clickable executable to `artifacts\publish\UpdateKit.Example.WinForms\win-x64\UpdateKit.Example.WinForms.exe`. The publish uses Release configuration, omits debug symbols, and deliberately keeps trimming disabled. See the root [README](../README.md#publish-a-standalone-windows-executable) for the exact underlying command.
+
+The example stores versioned JSON at `%LocalAppData%\UpdateKit\Example.WinForms\settings.json`. It can remember appearance, prerelease and startup-check preferences, download confirmation and folder-opening choices, repository fields, asset selection, destination directories, and bounded retry values. Missing, malformed, partial, unreadable, and future-version files fall back to safe defaults. Saves use a temporary file followed by atomic replacement, and **access tokens are never represented in or written to the settings file**. Use **Clear saved settings** in the dialog to reset the current UI and remove the saved file after confirmation.
 
 ## 9. Host the WPF update window
 

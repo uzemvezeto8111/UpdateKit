@@ -22,10 +22,10 @@ The repository is split into three libraries and three practical samples:
 - **Download without partial success** - stream into a unique temporary file, report byte and percentage progress, support cancellation and configurable transient retries, and replace the destination only after a complete transfer.
 - **Preserve existing files** - keep an existing destination intact when requests, streaming, cancellation, or pre-commit file operations fail.
 - **Verify what was downloaded** - validate a direct SHA-256 value or resolve the matching filename from a standard checksum-file asset; delete mismatched downloads.
-- **Host a native update experience** - show release name, version, notes, publication date, selected asset, progress, cancellation, completion, and actionable errors in reusable WinForms or WPF UI.
+- **Host a native update experience** - show release name, version, notes, publication date, selected asset, progress, cancellation, completion, and actionable errors in reusable WinForms or WPF UI; WinForms hosts can opt into centralized System, Light, or Dark theming.
 - **Compose with MVVM** - bind a custom WPF view directly to `UpdateWindowViewModel`, its presentation properties, and its check, download, and cancellation commands.
 - **Handle failures explicitly** - branch on stable `UpdateErrorCode` values instead of parsing exception or message text.
-- **Test without live services** - run 330 deterministic automated tests backed by custom HTTP handlers rather than the real GitHub API.
+- **Test without live services** - run 353 deterministic automated tests backed by custom HTTP handlers rather than the real GitHub API.
 
 ## Screenshots
 
@@ -34,6 +34,8 @@ The repository is split into three libraries and three practical samples:
 ![UpdateKit WinForms example configuration screen](docs/assets/winforms-example-configuration.png)
 
 *The example host collects repository, installed-version, prerelease, asset-selection, destination, and verification settings. The optional access token remains blank and is never persisted.*
+
+> This capture predates the new **Tools > Settings** entry. The configuration workflow remains representative; a future documentation-only refresh will include the settings menu and theme dialog.
 
 ### Review an available update
 
@@ -46,6 +48,18 @@ The repository is split into three libraries and three practical samples:
 ![UpdateKit WinForms update dialog showing a completed download](docs/assets/winforms-download-complete.png)
 
 *After a successful streamed transfer, the dialog shows the final destination, completed byte count, and a clear completion state.*
+
+## For application users
+
+Download `UpdateKit.Example.WinForms-win-x64.zip` from the matching GitHub Release, verify it against `SHA256SUMS.txt`, and extract the complete ZIP. Then double-click `UpdateKit.Example.WinForms.exe`. This Windows x64 build is self-contained and requires no installed .NET runtime, SDK, or terminal.
+
+The executable is an interactive demonstration and configuration client for UpdateKit. It can check a configured GitHub repository, display releases, select and download assets, report progress, and demonstrate checksum verification. It does **not** inject update support into unrelated or already-installed applications; application developers integrate the UpdateKit libraries into their own source code.
+
+Release executables are currently unsigned because the project has no code-signing certificate. Windows SmartScreen may therefore display an unknown-publisher warning. Confirm the ZIP's SHA-256 checksum before extracting it and download releases only from the official [UpdateKit repository](https://github.com/uzemvezeto8111/UpdateKit/releases).
+
+## For developers
+
+Clone the repository to build from source, run the samples, or reference `UpdateKit.Core`, `UpdateKit.WinForms`, or `UpdateKit.Wpf` from your application. Versioned NuGet packages for Core and WinForms are attached to GitHub Releases but are not automatically published to NuGet.org. The integration examples below show caller-owned `HttpClient`, update checks, asset selection, safe downloading, verification, and reusable desktop UI.
 
 ## Supported platforms
 
@@ -81,6 +95,77 @@ Run the example on Windows:
 ```powershell
 dotnet run --project samples/UpdateKit.Example.WinForms/UpdateKit.Example.WinForms.csproj
 ```
+
+### Publish a standalone Windows executable
+
+To produce a clickable Windows x64 executable that does not require an installed .NET runtime or SDK on the destination computer, run this repository script from Command Prompt on a development computer with the .NET 8 SDK:
+
+```cmd
+eng\publish-example.cmd
+```
+
+The script performs the following Release publish:
+
+```cmd
+dotnet publish samples\UpdateKit.Example.WinForms\UpdateKit.Example.WinForms.csproj ^
+  --configuration Release ^
+  --runtime win-x64 ^
+  --self-contained true ^
+  -p:PublishProfile=WinX64SelfContained ^
+  -p:PublishSingleFile=true ^
+  -p:PublishTrimmed=false ^
+  -p:DebugType=None ^
+  -p:DebugSymbols=false ^
+  --output artifacts\publish\UpdateKit.Example.WinForms\win-x64
+```
+
+Launch the resulting file directly from Explorer:
+
+```text
+artifacts\publish\UpdateKit.Example.WinForms\win-x64\UpdateKit.Example.WinForms.exe
+```
+
+The published application is self-contained, single-file, and does not include PDB files. Trimming remains disabled because WinForms and reflection-dependent framework behavior have not been proven trim-safe for this application. ReadyToRun is also disabled: the compressed single-file build is reliable without the additional size and publishing complexity. The repository's `.gitignore` excludes the complete `artifacts/` directory, so locally published executables are not added to source control. Developers can also invoke the checked-in `WinX64SelfContained` publish profile directly with `-p:PublishProfile=WinX64SelfContained`.
+
+For a complete distributable release—including the executable, user README, license, ZIP, NuGet packages, and SHA-256 manifest—run:
+
+```cmd
+eng\build-release.cmd
+```
+
+No application icon is invented or bundled yet. To provide the final icon later, add an authentic Windows icon at `samples\UpdateKit.Example.WinForms\Assets\UpdateKit.ico`; the project conditionally applies that file through `ApplicationIcon` when it exists.
+
+### Example application settings
+
+The full WinForms example includes **Tools > Settings** (`Ctrl+,`) and applies appearance changes immediately. Choose **System** to resolve the Windows application theme each time the example starts, or choose **Light** or **Dark** for an explicit palette. The selected palette covers the main form, settings dialog, reusable update dialog, menus, inputs, buttons, release notes, status/error surfaces, and progress display.
+
+The example can remember prerelease eligibility, startup checking, download confirmation, successful-download folder opening, repository owner/name, asset-selection mode/value, destination directory, default download directory, and bounded retry count/delay. Each remember option is independently configurable. Settings use versioned JSON stored per user at:
+
+```text
+%LocalAppData%\UpdateKit\Example.WinForms\settings.json
+```
+
+Writes are staged beside the destination and atomically committed. Missing, partial, malformed, unreadable, or newer unsupported settings fall back safely without preventing startup. **GitHub access tokens are never part of the settings model and are never serialized or persisted.** The settings dialog also provides a confirmation-protected **Clear saved settings** action.
+
+When automatic checking is enabled, the example waits until its main window is visible, validates the restored configuration, and starts at most one automatic check. It skips the check if required repository or destination values are missing. Opening the destination folder occurs only after a confirmed successful download; shell failures are presented as nonfatal UI errors.
+
+WinForms hosts can opt into the same reusable theme without adopting the example settings system:
+
+```csharp
+using UpdateKit.WinForms;
+
+var dialogOptions = new UpdateDialogOptions(
+    client,
+    currentVersion,
+    destinationPath,
+    release => client.SelectAssetByExtension(release, ".zip"))
+{
+    Theme = ApplicationTheme.System, // Or Light or Dark.
+    ConfirmBeforeDownload = true,
+};
+```
+
+Leaving `Theme` unset preserves UpdateKit's original platform-native dialog appearance. `WinFormsThemeManager` and its read-only `ThemePalette` are also available to hosts that want the same colors on their own WinForms control trees. Settings persistence intentionally remains in the example rather than `UpdateKit.Core`.
 
 Run the minimal WPF sample:
 

@@ -6,7 +6,12 @@
     <UseWindowsForms>true</UseWindowsForms>
     <RootNamespace>UpdateKit.Example.WinForms</RootNamespace>
     <AssemblyName>UpdateKit.Example.WinForms</AssemblyName>
-    <Description>Interactive Windows Forms example for UpdateKit.</Description>
+    <AssemblyTitle>UpdateKit Example</AssemblyTitle>
+    <Product>UpdateKit Example</Product>
+    <Description>GitHub Releases update client demonstration</Description>
+    <RepositoryUrl>https://github.com/uzemvezeto8111/UpdateKit</RepositoryUrl>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+    <ApplicationIcon Condition="Exists('Assets\UpdateKit.ico')">Assets\UpdateKit.ico</ApplicationIcon>
     <IsPackable>false</IsPackable>
   </PropertyGroup>
 

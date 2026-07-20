@@ -23,4 +23,8 @@ internal sealed record SampleConfigurationInput(
     string? AssetSelectionValue,
     string? DestinationFilePath,
     SampleVerificationMode VerificationMode,
-    string? VerificationValue);
+    string? VerificationValue,
+    int MaximumRetryAttempts = 0,
+    int RetryDelayMilliseconds = 1_000,
+    UpdateKit.WinForms.ApplicationTheme? DialogTheme = null,
+    bool ConfirmBeforeDownload = false);

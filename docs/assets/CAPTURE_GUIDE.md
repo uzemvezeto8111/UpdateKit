@@ -62,13 +62,13 @@ Enter these values in the example window:
 
 If the published release includes a real checksum asset, you may instead choose `Checksum-file asset` and enter its exact filename. Do not display a made-up checksum or a token in public media.
 
-Use the Windows light theme, the default system font, 100% or 125% display scaling, and the application's default window sizes. Ensure text is sharp and no control is clipped. Do not add decorative borders, browser chrome, drop shadows, or annotations.
+Open **Tools > Settings**, choose the explicit **Light** theme, and save before capturing. Use the default system font, 100% or 125% display scaling, and the application's default window sizes. Ensure text is sharp and no control is clipped. Do not add decorative borders, browser chrome, drop shadows, or annotations.
 
 ## 4. Capture `winforms-example-configuration.png`
 
 1. Configure the sample exactly as described above.
 2. Make sure the access-token field is empty and no validation or error message is visible.
-3. Keep the complete application window in frame, including its title bar and action buttons.
+3. Keep the complete application window in frame, including its title bar, **Tools > Settings** menu, and action buttons.
 4. Capture the window with Windows Snipping Tool window mode or `Alt+PrintScreen`.
 5. Crop only transparent or desktop space outside the window. Do not crop any application control.
 6. Save as `docs/assets/winforms-example-configuration.png`.
