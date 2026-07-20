@@ -1,18 +1,19 @@
 # UpdateKit media capture guide
 
-Use this guide to create the three public README visuals from the real UpdateKit applications. The captures must come from a working build and a genuine GitHub release response—do not construct, composite, or generate replacement UI.
+The repository now contains three authentic WinForms screenshots. Use this guide when they need to be recaptured and to create the remaining animated workflow. Captures must come from a working build and a genuine GitHub release response—do not construct, composite, or generate replacement UI.
 
 ## Final files
 
 Save the finished media directly in this directory with these exact names:
 
 ```text
-docs/assets/update-dialog-hero.png
-docs/assets/example-configuration.png
+docs/assets/winforms-example-configuration.png
+docs/assets/winforms-update-available.png
+docs/assets/winforms-download-complete.png
 docs/assets/update-flow-demo.gif
 ```
 
-Use PNG for both still images. Do not substitute JPEG, WebP, or a renamed format; keeping the names stable prevents README churn.
+Use PNG for all three still images. Do not substitute JPEG, WebP, or renamed formats; keeping the names stable prevents README churn. The three PNG files are complete, while the GIF remains pending.
 
 ## 1. Prepare an authentic release
 
@@ -64,28 +65,37 @@ If the published release includes a real checksum asset, you may instead choose 
 
 Use the Windows light theme, the default system font, 100% or 125% display scaling, and the application's default window sizes. Ensure text is sharp and no control is clipped. Do not add decorative borders, browser chrome, drop shadows, or annotations.
 
-## 4. Capture `example-configuration.png`
+## 4. Capture `winforms-example-configuration.png`
 
 1. Configure the sample exactly as described above.
 2. Make sure the access-token field is empty and no validation or error message is visible.
 3. Keep the complete application window in frame, including its title bar and action buttons.
 4. Capture the window with Windows Snipping Tool window mode or `Alt+PrintScreen`.
 5. Crop only transparent or desktop space outside the window. Do not crop any application control.
-6. Save as `docs/assets/example-configuration.png`.
+6. Save as `docs/assets/winforms-example-configuration.png`.
 
 Review the image at 100% zoom. Repository values should be readable, the destination must contain no private username, and no other application or notification should appear.
 
-## 5. Capture `update-dialog-hero.png`
+## 5. Capture `winforms-update-available.png`
 
 1. From the configured sample, choose **Check for updates**.
 2. Wait until the dialog displays **An update is available**.
 3. Leave the release notes scrolled to the top. Confirm the version, publication date, and selected package name are visible and no error is shown.
 4. Capture the entire dialog, including its native title bar and all buttons.
-5. Save the original-resolution capture as `docs/assets/update-dialog-hero.png`.
+5. Save the original-resolution capture as `docs/assets/winforms-update-available.png`.
 
-The hero should show the update-available state before Download is selected. This state communicates the most information without relying on a transient progress frame.
+The update-available screenshot should be captured before Download is selected. This state communicates the release details without relying on a transient progress frame.
 
-## 6. Record `update-flow-demo.gif`
+## 6. Capture `winforms-download-complete.png`
+
+1. Choose **Download** and wait until the dialog displays **Update downloaded**.
+2. Confirm the saved destination, completed byte count, full progress bar, and release details are visible.
+3. Capture the entire dialog, including its native title bar and all buttons.
+4. Save the original-resolution capture as `docs/assets/winforms-download-complete.png`.
+
+The completed state must come from a successful real transfer. Do not edit the progress value, byte count, destination, or status text.
+
+## 7. Record `update-flow-demo.gif`
 
 Use a recorder that can export an animated GIF, such as ScreenToGif. A Windows Snipping Tool screen recording is also suitable if you convert the resulting MP4 afterward.
 
@@ -119,24 +129,24 @@ ffmpeg -i update-flow-demo.mp4 -i update-flow-palette.png `
 
 Delete the temporary MP4 and palette PNG after confirming the GIF. Do not commit those intermediate files.
 
-## 7. Enable the README media
+## 8. Enable the README media
 
-The root [README](../../README.md) already contains the final image references inside HTML comments. After adding each real file:
+The root [README](../../README.md) actively references the three completed screenshots. The GIF reference remains inside an HTML comment. After adding the authentic GIF:
 
-1. Remove the surrounding `<!--` and `-->` markers for that image.
-2. Remove the matching `Visual preview pending`, `Example screenshot pending`, or `Demo pending` fallback paragraph.
+1. Remove the surrounding `<!--` and `-->` markers for the GIF.
+2. Remove the matching `Demo pending` fallback paragraph.
 3. Keep the supplied alt text unchanged unless the captured content materially differs.
 4. Preview the README at desktop and narrow widths.
 5. Verify all links and run `git diff --check` before committing.
 
-Enable only media that actually exists. It is valid to keep a later capture commented with its fallback text while publishing an earlier one.
+Do not activate an image reference until its authentic media file exists.
 
 ## Final review checklist
 
 - [ ] All media comes from the Release build and a real GitHub response.
-- [ ] The filenames exactly match the three names at the top of this guide.
+- [ ] The filenames exactly match the four names at the top of this guide.
 - [ ] No token, private username, notification, or unrelated window is visible.
-- [ ] The still images are crisp PNG files at their original capture resolution.
+- [ ] The three still images are crisp PNG files at their original capture resolution.
 - [ ] The GIF shows all four required states, loops cleanly, and remains readable.
 - [ ] The README contains no broken active image reference.
 - [ ] Only completed assets have had their README references enabled.

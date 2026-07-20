@@ -1,16 +1,16 @@
 # Documentation media assets
 
-This directory is reserved for authentic captures of the UpdateKit WinForms applications. Do not add mockups, generated UI, credentials, personal paths, or unrelated binary files.
+This directory contains authentic captures of the UpdateKit WinForms applications. Do not add mockups, generated UI, credentials, personal paths, or unrelated binary files.
 
-The final public assets are:
+The public assets are:
 
-| Filename | Format | README role |
+| Filename | Status | README role |
 | --- | --- | --- |
-| `update-dialog-hero.png` | PNG | Primary hero screenshot of the reusable update dialog in the update-available state |
-| `example-configuration.png` | PNG | Full-window screenshot of the example application's safe public configuration |
-| `update-flow-demo.gif` | Animated GIF | Short check → update found → download → completion workflow |
+| `winforms-example-configuration.png` | Present | Full-window example configuration screen |
+| `winforms-update-available.png` | Present | Reusable dialog in the update-available state |
+| `winforms-download-complete.png` | Present | Reusable dialog after a successful download |
+| `update-flow-demo.gif` | Pending | Short check → update found → download → completion workflow |
 
-Until those three captures exist, the root README intentionally keeps their image elements inside Markdown comments and renders descriptive fallback text instead. This avoids broken images while retaining the final filenames and ready-to-enable references.
+The root README actively references all three PNG files through relative paths. The animated GIF remains inside a Markdown comment with descriptive fallback text until an authentic recording is added, preventing a broken image.
 
-Follow [CAPTURE_GUIDE.md](CAPTURE_GUIDE.md) for the exact release fixture, sample values, capture composition, export settings, filenames, and README activation steps.
-
+Follow [CAPTURE_GUIDE.md](CAPTURE_GUIDE.md) for capture provenance, recapture guidance, GIF export settings, filenames, and README activation steps.

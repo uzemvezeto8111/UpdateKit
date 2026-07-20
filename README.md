@@ -6,12 +6,6 @@ UpdateKit handles the update path from release discovery to a safely committed d
 
 > UpdateKit is currently an early pre-release. Public APIs may change before a stable release.
 
-<!-- Planned README hero. After capture, remove the fallback paragraph below and uncomment this line:
-![UpdateKit WinForms update dialog showing an available release](docs/assets/update-dialog-hero.png)
--->
-
-> **Visual preview pending:** the hero image will show the native update dialog with release metadata, notes, selected asset, progress controls, and host-configured verification. Follow the [media capture guide](docs/assets/CAPTURE_GUIDE.md) to add the final screenshot.
-
 The repository is split into three libraries and three practical samples:
 
 - `UpdateKit.Core` - platform-neutral GitHub release retrieval, Semantic Versioning, asset selection, safe downloading, and SHA-256 verification.
@@ -33,13 +27,27 @@ The repository is split into three libraries and three practical samples:
 - **Handle failures explicitly** - branch on stable `UpdateErrorCode` values instead of parsing exception or message text.
 - **Test without live services** - run 330 deterministic automated tests backed by custom HTTP handlers rather than the real GitHub API.
 
-## Visual tour
+## Screenshots
 
-<!-- Planned example screenshot. After capture, remove its fallback paragraph and uncomment this line:
-![UpdateKit example application configured for a GitHub release check](docs/assets/example-configuration.png)
--->
+### Configure the example application
 
-> **Example screenshot pending:** the configuration application exposes repository, version, prerelease, asset-selection, destination, and checksum choices while keeping the optional token masked and ephemeral.
+![UpdateKit WinForms example configuration screen](docs/assets/winforms-example-configuration.png)
+
+*The example host collects repository, installed-version, prerelease, asset-selection, destination, and verification settings. The optional access token remains blank and is never persisted.*
+
+### Review an available update
+
+![UpdateKit WinForms update dialog showing an available release](docs/assets/winforms-update-available.png)
+
+*The reusable dialog presents the release version, publication date, selected asset, and release notes before the user starts the download.*
+
+### Confirm download completion
+
+![UpdateKit WinForms update dialog showing a completed download](docs/assets/winforms-download-complete.png)
+
+*After a successful streamed transfer, the dialog shows the final destination, completed byte count, and a clear completion state.*
+
+### Animated workflow
 
 <!-- Planned workflow animation. After capture, remove its fallback paragraph and uncomment this line:
 ![UpdateKit update workflow from checking through successful download](docs/assets/update-flow-demo.gif)
