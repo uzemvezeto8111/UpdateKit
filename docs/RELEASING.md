@@ -38,7 +38,7 @@ This evaluates to package version `0.2.0-beta.1`, which requires tag `v0.2.0-bet
 A dry run performs every local validation and packaging step but does not push a tag, create a GitHub Release, or publish to NuGet.org. From a clean repository root on Windows, run:
 
 ```cmd
-eng\build-release.cmd -Tag v0.1.0
+eng\build-release.cmd -Tag v0.2.0
 ```
 
 Omit `-Tag` to use the currently evaluated package version. The script locates the .NET 8 SDK, restores the complete solution and Windows x64 runtime assets, verifies the requested tag, builds in Release mode, runs every test, validates both NuGet packages, publishes and security-scans the example, creates the ZIP, and generates checksums. It cleans only `artifacts/release` before packaging.
@@ -75,8 +75,8 @@ The application is not digitally signed because the project has no authentic cod
 After reviewing the dry-run output:
 
 ```powershell
-git tag -a v0.1.0 -m "UpdateKit v0.1.0"
-git push origin v0.1.0
+git tag -a v0.2.0 -m "UpdateKit v0.2.0"
+git push origin v0.2.0
 ```
 
 The tag push is the only release trigger. The workflow restores the solution and Windows x64 runtime assets, verifies that the pushed tag already exists and matches package metadata, builds, tests, packs, publishes, scans, and uploads exactly these assets:

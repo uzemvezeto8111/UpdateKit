@@ -471,7 +471,7 @@ internal sealed class MainForm : Form
     private static string GetApplicationSemanticVersion()
     {
         var version = typeof(MainForm).Assembly.GetName().Version;
-        return version is null ? "0.1.0" : $"{Math.Max(0, version.Major)}.{Math.Max(0, version.Minor)}.{Math.Max(0, version.Build)}";
+        return version is null ? "0.2.0" : $"{Math.Max(0, version.Major)}.{Math.Max(0, version.Minor)}.{Math.Max(0, version.Build)}";
     }
 
     private static string GetExistingDirectory(string filePath, string fallback)
