@@ -1,0 +1,126 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions: {}
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build-test-pack:
+    name: Build, test, and pack
+    runs-on: windows-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    outputs:
+      version: ${{ steps.prepare.outputs.version }}
+      prerelease: ${{ steps.prepare.outputs.prerelease }}
+
+    steps:
+      - name: Check out tagged source
+        uses: actions/checkout@v6.0.2
+
+      - name: Set up .NET 8
+        uses: actions/setup-dotnet@v5.2.0
+        with:
+          dotnet-version: 8.0.x
+          cache: true
+          cache-dependency-path: Directory.Packages.props
+
+      - name: Restore
+        run: dotnet restore UpdateKit.sln
+
+      - name: Verify tag and package versions
+        shell: pwsh
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: ./eng/Prepare-Release.ps1 -Tag $env:RELEASE_TAG -VerifyOnly
+
+      - name: Build
+        run: dotnet build UpdateKit.sln --configuration Release --no-restore
+
+      - name: Test
+        run: dotnet test UpdateKit.sln --configuration Release --no-build --no-restore --logger "trx;LogFilePrefix=release"
+
+      - name: Pack and checksum release assets
+        id: prepare
+        shell: pwsh
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: ./eng/Prepare-Release.ps1 -Tag $env:RELEASE_TAG
+
+      - name: Upload verified release assets
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: release-assets-${{ steps.prepare.outputs.version }}
+          path: artifacts/release/*
+          if-no-files-found: error
+          retention-days: 1
+
+  publish-release:
+    name: Create or update GitHub Release
+    needs: build-test-pack
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download verified release assets
+        uses: actions/download-artifact@v8.0.1
+        with:
+          name: release-assets-${{ needs.build-test-pack.outputs.version }}
+          path: release-assets
+
+      - name: Create or update release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.ref_name }}
+          IS_PRERELEASE: ${{ needs.build-test-pack.outputs.prerelease }}
+        run: |
+          set -euo pipefail
+
+          if gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            mkdir existing-assets
+            find release-assets -maxdepth 1 -type f -printf '%f\n' | sort > expected-assets.txt
+            gh release view "$RELEASE_TAG" \
+              --json assets \
+              --jq '.assets[].name' \
+              --repo "$GITHUB_REPOSITORY" | sort > existing-assets.txt
+            diff --unified expected-assets.txt existing-assets.txt
+
+            gh release download "$RELEASE_TAG" \
+              --pattern '*.nupkg' \
+              --pattern 'SHA256SUMS.txt' \
+              --dir existing-assets \
+              --repo "$GITHUB_REPOSITORY"
+
+            while IFS= read -r asset_name; do
+              cmp --silent "release-assets/$asset_name" "existing-assets/$asset_name"
+            done < expected-assets.txt
+
+            gh release edit "$RELEASE_TAG" \
+              --title "UpdateKit $RELEASE_TAG" \
+              --draft=false \
+              --prerelease="$IS_PRERELEASE" \
+              --repo "$GITHUB_REPOSITORY"
+          else
+            prerelease_args=()
+            if [[ "$IS_PRERELEASE" == "true" ]]; then
+              prerelease_args+=(--prerelease)
+            fi
+
+            gh release create "$RELEASE_TAG" release-assets/* \
+              --verify-tag \
+              --title "UpdateKit $RELEASE_TAG" \
+              --generate-notes \
+              "${prerelease_args[@]}" \
+              --repo "$GITHUB_REPOSITORY"
+          fi
