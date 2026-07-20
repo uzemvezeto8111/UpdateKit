@@ -1,0 +1,81 @@
+name: Bug report
+description: Report reproducible incorrect behavior in UpdateKit.
+title: "[Bug]: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for helping improve UpdateKit. Remove credentials, private repository details, and sensitive file paths before submitting.
+
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Before submitting
+      options:
+        - label: I searched existing issues for the same problem.
+          required: true
+        - label: This report does not disclose a security vulnerability or credential.
+          required: true
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: Problem summary
+      description: Describe the incorrect behavior and its user impact.
+      placeholder: UpdateKit returns or displays...
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Minimal reproduction
+      description: List the smallest deterministic steps or include a small code sample.
+      placeholder: |
+        1. Configure UpdateClient with...
+        2. Call...
+        3. Observe...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: What should have happened instead?
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: Include the UpdateErrorCode and message when available. Do not include tokens.
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: UpdateKit version or commit
+      placeholder: 0.1.0 or commit SHA
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Include the operating system, .NET SDK/runtime, target framework, and relevant application type.
+      placeholder: Windows 11; .NET SDK 8.0.x; net8.0-windows; WinForms
+    validations:
+      required: true
+
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Additional diagnostics
+      description: Add sanitized logs, stack traces, screenshots, or fixture responses if useful.
+

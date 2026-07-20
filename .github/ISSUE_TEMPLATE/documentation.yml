@@ -1,0 +1,58 @@
+name: Documentation issue
+description: Report missing, unclear, outdated, or incorrect documentation.
+title: "[Docs]: "
+labels:
+  - documentation
+body:
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before submitting
+      options:
+        - label: I checked the README, getting-started guide, samples, and XML API comments where relevant.
+          required: true
+
+  - type: input
+    id: location
+    attributes:
+      label: Documentation location
+      description: Provide a repository path, section heading, API name, or URL.
+      placeholder: docs/GETTING_STARTED.md — Download with progress and cancellation
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What is unclear or missing?
+      description: Explain how the current text could mislead or block a reader.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected documentation
+      description: Describe the fact, example, warning, or navigation improvement that should be present.
+    validations:
+      required: true
+
+  - type: textarea
+    id: suggestion
+    attributes:
+      label: Suggested wording or example
+      description: Optional proposed text. Do not include credentials or private repository details.
+
+  - type: dropdown
+    id: audience
+    attributes:
+      label: Primary audience
+      options:
+        - First-time evaluator
+        - Core API integrator
+        - WinForms integrator
+        - Contributor
+        - Package maintainer
+    validations:
+      required: true
+

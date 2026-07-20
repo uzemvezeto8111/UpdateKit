@@ -2,11 +2,13 @@
 
 Thank you for improving UpdateKit. Small, focused changes with deterministic tests are easiest to review.
 
+Use the [contributor development checklist](docs/CONTRIBUTOR_DEVELOPMENT_CHECKLIST.md) while preparing a change. If you are looking for a contained first contribution, review the [good first issue candidates](docs/GOOD_FIRST_ISSUES.md).
+
 ## Prerequisites
 
 - .NET 8 SDK
 - Git
-- Windows for building and testing the WinForms projects
+- Windows for building and testing the WinForms and WPF projects
 
 The SDK selection is recorded in `global.json` and rolls forward to the latest installed .NET 8 feature band.
 
@@ -24,6 +26,7 @@ dotnet test UpdateKit.sln --configuration Release --no-build --no-restore
 
 - Preserve nullable reference-type correctness and the warnings-as-errors build.
 - Keep GitHub transport, versioning, asset selection, downloading, verification, and UI concerns separated.
+- Keep WinForms and WPF views thin; shared update behavior belongs in Core and bindable WPF state belongs in its view model.
 - Use `UpdateResult<T>` and existing `UpdateErrorCode` values for expected operational failures.
 - Preserve `HttpClient` ownership: public services borrow it and do not dispose it.
 - Keep downloads streaming, cancellable, and safe for existing destination files.
@@ -44,6 +47,10 @@ Before opening a pull request:
 
 Bug reports should include the UpdateKit revision, .NET version, operating system, expected behavior, actual `UpdateErrorCode`, and a minimal reproduction with secrets removed.
 
+## Releases
+
+Maintainers should follow the version, dry-run, tagging, and GitHub Release procedure in [RELEASING.md](docs/RELEASING.md). The release workflow does not publish to NuGet.org.
+
 ## Security reports
 
 Do not open public issues for vulnerabilities. Follow [SECURITY.md](SECURITY.md).
@@ -51,4 +58,3 @@ Do not open public issues for vulnerabilities. Follow [SECURITY.md](SECURITY.md)
 ## License
 
 By contributing, you agree that your contribution will be licensed under the repository's [MIT License](LICENSE).
-

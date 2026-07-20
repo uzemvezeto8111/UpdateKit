@@ -1,0 +1,71 @@
+name: Feature request
+description: Propose a focused improvement to UpdateKit.
+title: "[Feature]: "
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Describe the user problem first. Focused additions that preserve UpdateKit's transport, versioning, download, verification, and UI boundaries are easiest to evaluate.
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before submitting
+      options:
+        - label: I searched existing issues and documentation for this capability.
+          required: true
+        - label: This request describes a user need rather than a private implementation detail.
+          required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: User problem
+      description: Who needs this and what can they not do today?
+    validations:
+      required: true
+
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Expected outcome
+      description: Describe observable behavior without requiring a particular internal design.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Suggested approach
+      description: Optional API sketch, workflow, or UI behavior.
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Note current workarounds and why they are insufficient.
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Primary area
+      options:
+        - Core API
+        - GitHub release retrieval
+        - Version handling
+        - Asset selection
+        - Downloading
+        - Checksum verification
+        - WinForms UI
+        - Samples or documentation
+    validations:
+      required: true
+
+  - type: textarea
+    id: compatibility
+    attributes:
+      label: Compatibility considerations
+      description: Could this affect existing public APIs, result contracts, files, or UI behavior?
+
