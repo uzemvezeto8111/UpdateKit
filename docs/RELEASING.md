@@ -21,24 +21,24 @@ The build job has read-only repository access. A separate release job receives o
 Set the stable version in `Directory.Build.props`:
 
 ```xml
-<VersionPrefix>0.2.0</VersionPrefix>
+<VersionPrefix>0.2.1</VersionPrefix>
 ```
 
 For a prerelease, also set `VersionSuffix`:
 
 ```xml
-<VersionPrefix>0.2.0</VersionPrefix>
+<VersionPrefix>0.2.1</VersionPrefix>
 <VersionSuffix>beta.1</VersionSuffix>
 ```
 
-This evaluates to package version `0.2.0-beta.1`, which requires tag `v0.2.0-beta.1`. Remove `VersionSuffix` for a stable release. Commit and push the version change before creating the tag.
+This evaluates to package version `0.2.1-beta.1`, which requires tag `v0.2.1-beta.1`. Remove `VersionSuffix` for a stable release. Commit and push the version change before creating the tag.
 
 ## Perform a dry run
 
 A dry run performs every local validation and packaging step but does not push a tag, create a GitHub Release, or publish to NuGet.org. From a clean repository root on Windows, run:
 
 ```cmd
-eng\build-release.cmd -Tag v0.2.0
+eng\build-release.cmd -Tag v0.2.1
 ```
 
 Omit `-Tag` to use the currently evaluated package version. The script locates the .NET 8 SDK, restores the complete solution and Windows x64 runtime assets, verifies the requested tag, builds in Release mode, runs every test, validates both NuGet packages, publishes and security-scans the example, creates the ZIP, and generates checksums. It cleans only `artifacts/release` before packaging.
@@ -75,8 +75,8 @@ The application is not digitally signed because the project has no authentic cod
 After reviewing the dry-run output:
 
 ```powershell
-git tag -a v0.2.0 -m "UpdateKit v0.2.0"
-git push origin v0.2.0
+git tag -a v0.2.1 -m "UpdateKit v0.2.1"
+git push origin v0.2.1
 ```
 
 The tag push is the only release trigger. The workflow restores the solution and Windows x64 runtime assets, verifies that the pushed tag already exists and matches package metadata, builds, tests, packs, publishes, scans, and uploads exactly these assets:

@@ -1,5 +1,7 @@
 namespace UpdateKit.WinForms.Internal;
 
+using UpdateKit.Desktop.Internal;
+
 internal enum UpdateDialogStatus
 {
     Initial,
@@ -44,4 +46,11 @@ internal sealed record UpdateDialogViewState(
         Status is UpdateDialogStatus.Checking or UpdateDialogStatus.Downloading;
 
     public bool CanClose => !IsBusy;
+
+    public bool IsViewReleaseVisible =>
+        ReleasePageUriValidator.TryGetSafeReleasePageUri(
+            CheckResult?.LatestRelease.HtmlUrl,
+            out _);
+
+    public bool CanViewRelease => IsViewReleaseVisible && !IsBusy;
 }

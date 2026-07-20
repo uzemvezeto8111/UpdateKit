@@ -124,6 +124,13 @@
         </Border>
 
         <StackPanel Grid.Row="7" HorizontalAlignment="Right" Orientation="Horizontal">
+            <Button MinWidth="104"
+                    Margin="0,0,8,0"
+                    Padding="12,5"
+                    Command="{Binding ViewReleaseCommand}"
+                    Content="View release"
+                    Visibility="{Binding IsViewReleaseVisible, Converter={StaticResource BooleanToVisibilityConverter}}"
+                    automation:AutomationProperties.Name="View release on GitHub" />
             <Button MinWidth="118"
                     Margin="0,0,8,0"
                     Padding="12,5"

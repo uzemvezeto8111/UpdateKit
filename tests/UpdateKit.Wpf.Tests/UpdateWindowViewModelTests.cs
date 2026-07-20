@@ -4,6 +4,7 @@ using System.Net;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using UpdateKit.Desktop.Internal;
 using UpdateKit.Wpf.Tests.TestInfrastructure;
 
 namespace UpdateKit.Wpf.Tests;
@@ -26,9 +27,12 @@ public sealed class UpdateWindowViewModelTests
         Assert.False(viewModel.CanDownload);
         Assert.False(viewModel.CanCancel);
         Assert.False(viewModel.IsOperationInProgress);
+        Assert.False(viewModel.IsViewReleaseVisible);
+        Assert.False(viewModel.CanViewRelease);
         Assert.True(viewModel.CheckForUpdateCommand.CanExecute(null));
         Assert.False(viewModel.DownloadCommand.CanExecute(null));
         Assert.False(viewModel.CancelCommand.CanExecute(null));
+        Assert.False(viewModel.ViewReleaseCommand.CanExecute(null));
     }
 
     [Fact]
@@ -52,8 +56,57 @@ public sealed class UpdateWindowViewModelTests
         Assert.Equal("Release notes", viewModel.ReleaseNotes);
         Assert.NotEqual("—", viewModel.PublishedText);
         Assert.Equal("UpdateKit.zip (2.0 KB)", viewModel.SelectedAssetText);
+        Assert.True(viewModel.IsViewReleaseVisible);
+        Assert.True(viewModel.CanViewRelease);
+        Assert.True(viewModel.ViewReleaseCommand.CanExecute(null));
         Assert.Contains(nameof(UpdateWindowViewModel.Status), changedProperties);
         Assert.Contains(nameof(UpdateWindowViewModel.ReleaseNotes), changedProperties);
+    }
+
+    [Fact]
+    public async Task ViewReleaseCommand_UsesInjectedLauncherWithoutChangingWorkflowState()
+    {
+        var handler = RespondWithRelease(
+            "v2.0.0",
+            new Uri("https://downloads.example.test/UpdateKit.zip"));
+        using var httpClient = new HttpClient(handler, disposeHandler: false);
+        var launcher = new RecordingReleasePageLauncher(ReleasePageLaunchResult.Success());
+        using var viewModel = new UpdateWindowViewModel(
+            CreateWindowOptions(httpClient, "unused.zip"),
+            launcher);
+        await viewModel.CheckForUpdateAsync();
+
+        viewModel.ViewReleaseCommand.Execute(null);
+
+        Assert.Equal(
+            "https://github.com/octocat/Hello-World/releases/tag/v2.0.0",
+            launcher.LaunchedUri?.AbsoluteUri);
+        Assert.Equal(UpdateWindowStatus.UpdateAvailable, viewModel.Status);
+        Assert.True(viewModel.CanDownload);
+        Assert.False(viewModel.HasError);
+    }
+
+    [Fact]
+    public async Task ViewReleaseCommand_PresentsLaunchFailureWithoutDisablingDownload()
+    {
+        var handler = RespondWithRelease(
+            "v2.0.0",
+            new Uri("https://downloads.example.test/UpdateKit.zip"));
+        using var httpClient = new HttpClient(handler, disposeHandler: false);
+        var launcher = new RecordingReleasePageLauncher(
+            ReleasePageLaunchResult.Failure("The browser could not be started."));
+        using var viewModel = new UpdateWindowViewModel(
+            CreateWindowOptions(httpClient, "unused.zip"),
+            launcher);
+        await viewModel.CheckForUpdateAsync();
+
+        viewModel.ViewReleaseCommand.Execute(null);
+
+        Assert.True(viewModel.HasError);
+        Assert.Contains("browser could not be started", viewModel.ErrorText, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(UpdateWindowStatus.UpdateAvailable, viewModel.Status);
+        Assert.True(viewModel.CanDownload);
+        Assert.Null(viewModel.LastError);
     }
 
     [Fact]
@@ -432,6 +485,24 @@ public sealed class UpdateWindowViewModelTests
 
     private static string Checksum(byte[] payload) =>
         Convert.ToHexString(SHA256.HashData(payload));
+
+    private sealed class RecordingReleasePageLauncher : IReleasePageLauncher
+    {
+        private readonly ReleasePageLaunchResult _result;
+
+        public RecordingReleasePageLauncher(ReleasePageLaunchResult result)
+        {
+            _result = result;
+        }
+
+        public Uri? LaunchedUri { get; private set; }
+
+        public ReleasePageLaunchResult Launch(Uri releasePageUri)
+        {
+            LaunchedUri = releasePageUri;
+            return _result;
+        }
+    }
 
     private static StubHttpMessageHandler HandlerThatMustNotRun() =>
         new((_, _) => throw new InvalidOperationException("The HTTP handler must not be called."));

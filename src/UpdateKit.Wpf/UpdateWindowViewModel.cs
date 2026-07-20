@@ -2,6 +2,7 @@ using System.ComponentModel;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Windows.Input;
+using UpdateKit.Desktop.Internal;
 using UpdateKit.Wpf.Internal;
 
 namespace UpdateKit.Wpf;
@@ -25,6 +26,8 @@ public sealed class UpdateWindowViewModel : INotifyPropertyChanged, IDisposable
         nameof(CanDownload),
         nameof(CanCancel),
         nameof(CanClose),
+        nameof(IsViewReleaseVisible),
+        nameof(CanViewRelease),
         nameof(Heading),
         nameof(ReleaseName),
         nameof(AvailableVersion),
@@ -47,17 +50,28 @@ public sealed class UpdateWindowViewModel : INotifyPropertyChanged, IDisposable
     private readonly AsyncRelayCommand _downloadCommand;
     private readonly AsyncRelayCommand _primaryActionCommand;
     private readonly RelayCommand _cancelCommand;
+    private readonly RelayCommand _viewReleaseCommand;
+    private readonly ReleasePageAction _releasePageAction;
 
     private UpdateWindowState _state = UpdateWindowState.Initial;
     private CancellationTokenSource? _operationCancellation;
+    private string? _releasePageError;
     private bool _disposed;
 
     /// <summary>Creates a bindable workflow for the supplied window options.</summary>
     /// <remarks>Create the view model on the UI thread when property notifications must return there.</remarks>
     public UpdateWindowViewModel(UpdateWindowOptions options)
+        : this(options, new ShellReleasePageLauncher())
+    {
+    }
+
+    internal UpdateWindowViewModel(
+        UpdateWindowOptions options,
+        IReleasePageLauncher releasePageLauncher)
     {
         _options = options ?? throw new ArgumentNullException(nameof(options));
         options.Validate();
+        _releasePageAction = new ReleasePageAction(releasePageLauncher);
         _synchronizationContext = SynchronizationContext.Current;
 
         _checkForUpdateCommand = new AsyncRelayCommand(
@@ -72,6 +86,9 @@ public sealed class UpdateWindowViewModel : INotifyPropertyChanged, IDisposable
         _cancelCommand = new RelayCommand(
             () => CancelOperation(),
             () => CanCancel);
+        _viewReleaseCommand = new RelayCommand(
+            OpenReleasePage,
+            () => CanViewRelease);
     }
 
     /// <inheritdoc />
@@ -110,6 +127,13 @@ public sealed class UpdateWindowViewModel : INotifyPropertyChanged, IDisposable
     /// <summary>Gets whether the host can close without first waiting for cancellation.</summary>
     public bool CanClose => State.CanClose;
 
+    /// <summary>Gets whether the standard window can display the secure GitHub release-page action.</summary>
+    public bool IsViewReleaseVisible => _releasePageAction.IsVisible(
+        CheckResult?.LatestRelease.HtmlUrl);
+
+    /// <summary>Gets whether the secure GitHub release page can be opened in the current state.</summary>
+    public bool CanViewRelease => IsViewReleaseVisible && !IsOperationInProgress;
+
     /// <summary>Gets the command that starts an update check.</summary>
     public ICommand CheckForUpdateCommand => _checkForUpdateCommand;
 
@@ -121,6 +145,9 @@ public sealed class UpdateWindowViewModel : INotifyPropertyChanged, IDisposable
 
     /// <summary>Gets the command that cancels the active operation.</summary>
     public ICommand CancelCommand => _cancelCommand;
+
+    /// <summary>Gets the command that opens the validated GitHub release page in the default browser.</summary>
+    public ICommand ViewReleaseCommand => _viewReleaseCommand;
 
     /// <summary>Gets the localized status heading.</summary>
     public string Heading => HeadingFor(Status);
@@ -169,10 +196,24 @@ public sealed class UpdateWindowViewModel : INotifyPropertyChanged, IDisposable
     };
 
     /// <summary>Gets the actionable error text.</summary>
-    public string ErrorText => LastError is null ? string.Empty : $"Error: {LastError.Message}";
+    public string ErrorText
+    {
+        get
+        {
+            string? releasePageError;
+            lock (_sync)
+            {
+                releasePageError = _releasePageError;
+            }
+
+            return releasePageError is not null
+                ? $"Error: {releasePageError}"
+                : LastError is null ? string.Empty : $"Error: {LastError.Message}";
+        }
+    }
 
     /// <summary>Gets whether an operational error is available.</summary>
-    public bool HasError => LastError is not null;
+    public bool HasError => !string.IsNullOrEmpty(ErrorText);
 
     /// <summary>Gets the context-sensitive primary action label.</summary>
     public string PrimaryActionText => CanCheck
@@ -434,6 +475,23 @@ public sealed class UpdateWindowViewModel : INotifyPropertyChanged, IDisposable
         }
     }
 
+    private void OpenReleasePage()
+    {
+        var result = _releasePageAction.TryOpen(CheckResult?.LatestRelease.HtmlUrl);
+
+        lock (_sync)
+        {
+            if (_disposed)
+            {
+                return;
+            }
+
+            _releasePageError = result.IsSuccess ? null : result.ErrorMessage;
+        }
+
+        RaiseStateChanged();
+    }
+
     private CancellationTokenSource? BeginCheck()
     {
         lock (_sync)
@@ -446,6 +504,7 @@ public sealed class UpdateWindowViewModel : INotifyPropertyChanged, IDisposable
             }
 
             _operationCancellation = new CancellationTokenSource();
+            _releasePageError = null;
             _state = new UpdateWindowState(UpdateWindowStatus.Checking);
         }
 
@@ -478,6 +537,7 @@ public sealed class UpdateWindowViewModel : INotifyPropertyChanged, IDisposable
             asset = _state.SelectedAsset;
             cancellation = new CancellationTokenSource();
             _operationCancellation = cancellation;
+            _releasePageError = null;
             _state = new UpdateWindowState(
                 UpdateWindowStatus.Downloading,
                 checkResult,
@@ -546,6 +606,7 @@ public sealed class UpdateWindowViewModel : INotifyPropertyChanged, IDisposable
             _downloadCommand.RaiseCanExecuteChanged();
             _primaryActionCommand.RaiseCanExecuteChanged();
             _cancelCommand.RaiseCanExecuteChanged();
+            _viewReleaseCommand.RaiseCanExecuteChanged();
         }
 
         if (_synchronizationContext is null ||

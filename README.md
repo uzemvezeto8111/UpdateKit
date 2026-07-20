@@ -22,10 +22,10 @@ The repository is split into three libraries and three practical samples:
 - **Download without partial success** - stream into a unique temporary file, report byte and percentage progress, support cancellation and configurable transient retries, and replace the destination only after a complete transfer.
 - **Preserve existing files** - keep an existing destination intact when requests, streaming, cancellation, or pre-commit file operations fail.
 - **Verify what was downloaded** - validate a direct SHA-256 value or resolve the matching filename from a standard checksum-file asset; delete mismatched downloads.
-- **Host a native update experience** - show release name, version, notes, publication date, selected asset, progress, cancellation, completion, and actionable errors in reusable WinForms or WPF UI; WinForms hosts can opt into centralized System, Light, or Dark theming.
-- **Compose with MVVM** - bind a custom WPF view directly to `UpdateWindowViewModel`, its presentation properties, and its check, download, and cancellation commands.
+- **Host a native update experience** - show release name, version, notes, publication date, selected asset, progress, cancellation, completion, actionable errors, and a safe browser action for inspecting the GitHub release page before downloading; WinForms hosts can opt into centralized System, Light, or Dark theming.
+- **Compose with MVVM** - bind a custom WPF view directly to `UpdateWindowViewModel`, its presentation properties, and its check, download, view-release, and cancellation commands.
 - **Handle failures explicitly** - branch on stable `UpdateErrorCode` values instead of parsing exception or message text.
-- **Test without live services** - run 353 deterministic automated tests backed by custom HTTP handlers rather than the real GitHub API.
+- **Test without live services** - run 369 deterministic automated tests backed by custom HTTP handlers rather than the real GitHub API.
 
 ## Screenshots
 
@@ -42,6 +42,8 @@ The repository is split into three libraries and three practical samples:
 ![UpdateKit WinForms update dialog showing an available release](docs/assets/winforms-update-available.png)
 
 *The reusable dialog presents the release version, publication date, selected asset, and release notes before the user starts the download.*
+
+> In version 0.2.1 and later, the dialog also shows **View release** when GitHub supplies a validated HTTPS release-page URL. This screenshot predates that additional action; the remaining workflow and layout are unchanged.
 
 ### Confirm download completion
 
@@ -446,6 +448,8 @@ Checksum files accept standard lines containing a 64-character hexadecimal SHA-2
 
 Create a new `UpdateDialog` for every display. The dialog does not own or dispose its `UpdateClient` or the client's `HttpClient`.
 
+When an eligible release includes a validated, credential-free `https://github.com/.../releases/tag/...` page, the dialog shows **View release** so users can inspect it in their default browser before downloading. The action never launches an asset download URL, token-bearing URL, or local path. A browser-launch failure is displayed as a nonfatal error and does not disable downloading.
+
 ```csharp
 using UpdateKit;
 using UpdateKit.WinForms;
@@ -514,7 +518,7 @@ else if (updateWindow.LastError is { } error)
 }
 ```
 
-Use `ExpectedSha256` instead of `ChecksumAssetSelector` for direct verification. Set `CheckForUpdateOnLoaded = false` when the host starts checks itself. The public `UpdateWindowViewModel` exposes bindable release details, progress, errors, state flags, and `ICommand` properties for custom MVVM views. Create it on the UI thread so background progress notifications are marshaled back to that synchronization context, and dispose it when the view closes. Both the standard window and view model prevent concurrent operations and request cancellation before allowing an active workflow to close.
+Use `ExpectedSha256` instead of `ChecksumAssetSelector` for direct verification. Set `CheckForUpdateOnLoaded = false` when the host starts checks itself. The public `UpdateWindowViewModel` exposes bindable release details, progress, errors, state flags, and `ICommand` properties for custom MVVM views, including `ViewReleaseCommand`, `IsViewReleaseVisible`, and `CanViewRelease`. The standard window shows the same validated browser action as the WinForms dialog. Create the view model on the UI thread so background progress notifications are marshaled back to that synchronization context, and dispose it when the view closes. Both the standard window and view model prevent concurrent operations and request cancellation before allowing an active workflow to close.
 
 ## Authentication and security
 
@@ -551,6 +555,7 @@ Stable error categories include configuration, authentication, repository lookup
 ## More documentation
 
 - [Getting started](docs/GETTING_STARTED.md)
+- [Changelog](CHANGELOG.md)
 - [Release process and dry run](docs/RELEASING.md)
 - [Media capture guide](docs/assets/CAPTURE_GUIDE.md)
 - [Minimal WinForms integration sample](samples/UpdateKit.Minimal.WinForms)

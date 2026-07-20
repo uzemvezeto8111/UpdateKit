@@ -1,4 +1,5 @@
 using System.Globalization;
+using UpdateKit.Desktop.Internal;
 using UpdateKit.WinForms.Internal;
 
 namespace UpdateKit.WinForms;
@@ -11,6 +12,7 @@ public sealed class UpdateDialog : Form
 {
     private readonly UpdateDialogOptions _options;
     private readonly UpdateDialogController _controller;
+    private readonly ReleasePageAction _releasePageAction;
     private readonly Font _headingFont;
     private readonly Label _headingLabel = new();
     private readonly Label _releaseNameLabel = new();
@@ -23,17 +25,25 @@ public sealed class UpdateDialog : Form
     private readonly Label _bytesLabel = new();
     private readonly Label _errorLabel = new();
     private readonly Button _primaryButton = new();
+    private readonly Button _viewReleaseButton = new();
     private readonly Button _cancelButton = new();
     private readonly Button _closeButton = new();
 
     private bool _shown;
     private bool _closeWhenIdle;
+    private string? _releasePageError;
 
     /// <summary>Creates a single-use update dialog.</summary>
     public UpdateDialog(UpdateDialogOptions options)
+        : this(options, new ShellReleasePageLauncher())
+    {
+    }
+
+    internal UpdateDialog(UpdateDialogOptions options, IReleasePageLauncher releasePageLauncher)
     {
         _options = options ?? throw new ArgumentNullException(nameof(options));
         options.Validate();
+        _releasePageAction = new ReleasePageAction(releasePageLauncher);
         _controller = new UpdateDialogController(options);
         _controller.StateChanged += Controller_StateChanged;
 
@@ -299,6 +309,12 @@ public sealed class UpdateDialog : Form
         _primaryButton.AccessibleName = "Primary update action";
         _primaryButton.Click += PrimaryButton_Click;
 
+        _viewReleaseButton.AutoSize = true;
+        _viewReleaseButton.MinimumSize = new Size(104, 30);
+        _viewReleaseButton.Text = "View release";
+        _viewReleaseButton.AccessibleName = "View release on GitHub";
+        _viewReleaseButton.Click += ViewReleaseButton_Click;
+
         _cancelButton.AutoSize = true;
         _cancelButton.MinimumSize = new Size(88, 30);
         _cancelButton.Text = "Cancel";
@@ -323,7 +339,16 @@ public sealed class UpdateDialog : Form
         layout.Controls.Add(_closeButton);
         layout.Controls.Add(_cancelButton);
         layout.Controls.Add(_primaryButton);
+        layout.Controls.Add(_viewReleaseButton);
         return layout;
+    }
+
+    private void ViewReleaseButton_Click(object? sender, EventArgs e)
+    {
+        var result = _releasePageAction.TryOpen(
+            _controller.State.CheckResult?.LatestRelease.HtmlUrl);
+        _releasePageError = result.IsSuccess ? null : result.ErrorMessage;
+        ApplyState(_controller.State);
     }
 
     private async void PrimaryButton_Click(object? sender, EventArgs e)
@@ -462,6 +487,11 @@ public sealed class UpdateDialog : Form
 
     private void ApplyState(UpdateDialogViewState state)
     {
+        if (state.IsBusy || state.CheckResult is null)
+        {
+            _releasePageError = null;
+        }
+
         var release = state.CheckResult?.LatestRelease;
         _headingLabel.Text = HeadingFor(state.Status);
         _releaseNameLabel.Text = release?.Name ?? "No release selected";
@@ -476,8 +506,9 @@ public sealed class UpdateDialog : Form
             : release.Body;
         _statusLabel.Text = StatusTextFor(state);
 
-        _errorLabel.Text = state.Error is null ? string.Empty : $"Error: {state.Error.Message}";
-        _errorLabel.Visible = state.Error is not null;
+        var errorMessage = _releasePageError ?? state.Error?.Message;
+        _errorLabel.Text = errorMessage is null ? string.Empty : $"Error: {errorMessage}";
+        _errorLabel.Visible = errorMessage is not null;
 
         ApplyProgress(state);
         ApplyButtons(state);
@@ -529,6 +560,8 @@ public sealed class UpdateDialog : Form
         }
 
         _primaryButton.Enabled = state.CanCheck || state.CanDownload;
+        _viewReleaseButton.Visible = state.IsViewReleaseVisible;
+        _viewReleaseButton.Enabled = state.CanViewRelease;
         _cancelButton.Enabled = state.CanCancel;
         _closeButton.Enabled = state.CanClose;
 

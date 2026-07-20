@@ -226,6 +226,8 @@ else if (dialog.LastError is { } error)
 
 Use `ExpectedSha256` instead of `ChecksumAssetSelector` for a direct checksum. A dialog instance is single-use. Create a new instance each time, show it with the host form as owner, and dispose it afterward. It prevents duplicate operations and safely cancels active work when the user closes it.
 
+For eligible GitHub releases, the standard dialog displays **View release** before the download action. It opens only a validated, credential-free GitHub HTTPS release page; launch failures are shown without disabling the update workflow.
+
 `Theme` is optional. Leaving it unset retains the native appearance used by existing hosts. `ApplicationTheme.System` resolves the current Windows application theme, while `Light` and `Dark` select explicit UpdateKit palettes. Hosts may also call `WinFormsThemeManager.ApplyTheme(formOrControl, theme)` to apply the same centralized palette to their own WinForms tree. `ConfirmBeforeDownload` is also opt-in and defaults to `false` for backward compatibility.
 
 ### Example settings and persistence
@@ -275,7 +277,7 @@ else if (window.LastError is { } error)
 }
 ```
 
-Use a new window for every display. It borrows the `UpdateClient`, blocks duplicate operations, and cancels active work before closing. For custom MVVM rendering, bind to `UpdateWindowViewModel`; it exposes release and asset details, presentation text, progress, errors, state flags, and separate check, download, primary-action, and cancellation commands.
+Use a new window for every display. It borrows the `UpdateClient`, blocks duplicate operations, and cancels active work before closing. For custom MVVM rendering, bind to `UpdateWindowViewModel`; it exposes release and asset details, presentation text, progress, errors, state flags, and separate check, download, view-release, primary-action, and cancellation commands. `IsViewReleaseVisible` and `CanViewRelease` support custom rendering of the HTTPS-only GitHub release-page action.
 
 The minimal complete host is [UpdateKit.Minimal.Wpf](../samples/UpdateKit.Minimal.Wpf).
 

@@ -227,6 +227,51 @@ public sealed class GitHubReleaseSourceTests
     }
 
     [Fact]
+    public async Task GetReleasesAsync_MapsMissingReleaseHtmlUrlToMalformedResponse()
+    {
+        var releaseWithoutHtmlUrl = new
+        {
+            id = 42,
+            tag_name = "v1.2.3",
+            name = "UpdateKit 1.2.3",
+            body = "Release notes",
+            published_at = new DateTimeOffset(2026, 7, 19, 10, 0, 0, TimeSpan.Zero),
+            prerelease = false,
+            draft = false,
+            assets = new[] { CreateAssetPayload() },
+        };
+        var handler = RespondWithJson(releaseWithoutHtmlUrl);
+
+        var result = await RetrieveAsync(handler);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(UpdateErrorCode.MalformedResponse, result.Error.Code);
+    }
+
+    [Fact]
+    public async Task GetReleasesAsync_MapsMalformedReleaseHtmlUrlToMalformedResponse()
+    {
+        var releaseWithMalformedHtmlUrl = new
+        {
+            id = 42,
+            tag_name = "v1.2.3",
+            name = "UpdateKit 1.2.3",
+            body = "Release notes",
+            html_url = "not a release URL",
+            published_at = new DateTimeOffset(2026, 7, 19, 10, 0, 0, TimeSpan.Zero),
+            prerelease = false,
+            draft = false,
+            assets = new[] { CreateAssetPayload() },
+        };
+        var handler = RespondWithJson(releaseWithMalformedHtmlUrl);
+
+        var result = await RetrieveAsync(handler);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(UpdateErrorCode.MalformedResponse, result.Error.Code);
+    }
+
+    [Fact]
     public async Task GetReleasesAsync_MapsInvalidAssetToMalformedResponse()
     {
         var invalidAsset = CreateAssetPayload(size: -1);
