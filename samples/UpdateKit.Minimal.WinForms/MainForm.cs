@@ -8,8 +8,8 @@ internal sealed class MainForm : Form
     private const string RepositoryOwner = "uzemvezeto8111"; // CHANGE THIS.
     private const string RepositoryName = "UpdateKit"; // CHANGE THIS.
     private const string CurrentVersion = "0.0.0"; // CHANGE THIS to your installed version.
-    private const string AssetExtension = ".nupkg"; // CHANGE THIS to your release asset type.
-    private static readonly string DestinationPath = // CHANGE THIS to your installer/package path.
+    private const string AssetExtension = ".nupkg"; // CHANGE THIS; .exe, .msi, or .tar.gz also work.
+    private static readonly string DestinationPath = // CHANGE THIS to your downloaded-file path or existing directory.
         Path.Combine(Path.GetTempPath(), "UpdateKit.Minimal.WinForms-update.nupkg");
 
     private readonly HttpClient _httpClient;
@@ -68,6 +68,7 @@ internal sealed class MainForm : Form
             _updateClient,
             CurrentVersion,
             DestinationPath,
+            // For exact-name selection, use SelectAssetByExactName(release, "MyProduct-setup.exe") instead.
             release => _updateClient.SelectAssetByExtension(release, AssetExtension))
         {
             DialogTitle = "Software Update",

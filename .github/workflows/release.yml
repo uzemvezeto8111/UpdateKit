@@ -65,6 +65,7 @@ jobs:
           path: |
             artifacts/release/UpdateKit.Core.*.nupkg
             artifacts/release/UpdateKit.WinForms.*.nupkg
+            artifacts/release/UpdateKit.Wpf.*.nupkg
             artifacts/release/UpdateKit.Example.WinForms-win-x64.zip
             artifacts/release/SHA256SUMS.txt
           if-no-files-found: error

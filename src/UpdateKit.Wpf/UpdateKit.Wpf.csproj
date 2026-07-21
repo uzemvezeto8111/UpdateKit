@@ -18,6 +18,7 @@
   <ItemGroup>
     <ProjectReference Include="..\UpdateKit.Core\UpdateKit.Core.csproj" />
     <Compile Include="..\Shared\Desktop\ReleasePageAction.cs" Link="Internal\ReleasePageAction.cs" />
+    <Compile Include="..\Shared\Desktop\ReleaseAssetDestinationResolver.cs" Link="Internal\ReleaseAssetDestinationResolver.cs" />
   </ItemGroup>
 
   <ItemGroup>

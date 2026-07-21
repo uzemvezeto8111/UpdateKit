@@ -99,6 +99,27 @@ public sealed class AssetSelectorTests
         Assert.Same(expected, result.Value);
     }
 
+    [Theory]
+    [InlineData(".zip", "Product.zip")]
+    [InlineData("exe", "Product.exe")]
+    [InlineData(".msi", "Product.msi")]
+    [InlineData("nupkg", "Product.nupkg")]
+    [InlineData(".7z", "Product.7z")]
+    [InlineData("tar.gz", "Product.tar.gz")]
+    public void ByExtension_SelectsArbitraryFileTypesWithoutSpecialCases(
+        string extension,
+        string assetName)
+    {
+        var expected = CreateAsset(assetName);
+        var release = CreateRelease(CreateAsset("unrelated.txt"), expected);
+
+        var result = AssetSelector.ByExtension(release, extension);
+
+        Assert.True(result.IsSuccess);
+        Assert.Same(expected, result.Value);
+        Assert.Equal(assetName, result.Value.Name);
+    }
+
     [Fact]
     public void ByExtension_ReturnsFirstMatchInReleaseOrder()
     {

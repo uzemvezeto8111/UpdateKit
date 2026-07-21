@@ -33,6 +33,7 @@ public sealed class UpdateWindowViewModel : INotifyPropertyChanged, IDisposable
         nameof(AvailableVersion),
         nameof(PublishedText),
         nameof(SelectedAssetText),
+        nameof(DownloadSafetyMessage),
         nameof(ReleaseNotes),
         nameof(StatusText),
         nameof(ProgressPercentage),
@@ -165,7 +166,11 @@ public sealed class UpdateWindowViewModel : INotifyPropertyChanged, IDisposable
     /// <summary>Gets the selected asset name and size for display.</summary>
     public string SelectedAssetText => SelectedAsset is null
         ? "—"
-        : $"{SelectedAsset.Name} ({FormatBytes(SelectedAsset.Size)})";
+        : FormatAsset(SelectedAsset);
+
+    /// <summary>Gets the standard notice explaining that downloaded assets are not installed or run.</summary>
+    public string DownloadSafetyMessage =>
+        "UpdateKit downloads the selected release asset but does not install or run it.";
 
     /// <summary>Gets release notes or a descriptive fallback.</summary>
     public string ReleaseNotes => string.IsNullOrWhiteSpace(CheckResult?.LatestRelease.Body)
@@ -305,13 +310,32 @@ public sealed class UpdateWindowViewModel : INotifyPropertyChanged, IDisposable
     /// <returns><see langword="true"/> when an operation was started; otherwise <see langword="false"/>.</returns>
     public async Task<bool> DownloadAsync()
     {
-        var operation = BeginDownload();
+        var currentState = State;
+        if (!currentState.CanDownload || currentState.SelectedAsset is null)
+        {
+            return false;
+        }
+
+        var destinationResult = ReleaseAssetDestinationResolver.Resolve(
+            _options.DestinationFilePath,
+            currentState.SelectedAsset);
+        if (!destinationResult.IsSuccess)
+        {
+            SetState(currentState with
+            {
+                Status = UpdateWindowStatus.Failed,
+                Error = destinationResult.Error,
+            });
+            return true;
+        }
+
+        var operation = BeginDownload(destinationResult.Value);
         if (operation is null)
         {
             return false;
         }
 
-        var (cancellation, checkResult, asset) = operation.Value;
+        var (cancellation, checkResult, asset, destinationFilePath) = operation.Value;
 
         try
         {
@@ -322,7 +346,7 @@ public sealed class UpdateWindowViewModel : INotifyPropertyChanged, IDisposable
             {
                 result = await _options.Client.DownloadAndVerifyAsync(
                     asset,
-                    _options.DestinationFilePath,
+                    destinationFilePath,
                     _options.ExpectedSha256,
                     progress,
                     cancellation.Token);
@@ -340,13 +364,16 @@ public sealed class UpdateWindowViewModel : INotifyPropertyChanged, IDisposable
                         UpdateWindowStatus.Failed,
                         checkResult,
                         asset,
-                        Error: checksumAssetResult.Error));
+                        Error: checksumAssetResult.Error)
+                    {
+                        ResolvedDestinationFilePath = destinationFilePath,
+                    });
                     return true;
                 }
 
                 result = await _options.Client.DownloadAndVerifyFromChecksumFileAsync(
                     asset,
-                    _options.DestinationFilePath,
+                    destinationFilePath,
                     checksumAssetResult.Value,
                     progress,
                     cancellation.Token);
@@ -355,7 +382,7 @@ public sealed class UpdateWindowViewModel : INotifyPropertyChanged, IDisposable
             {
                 result = await _options.Client.DownloadAsync(
                     asset,
-                    _options.DestinationFilePath,
+                    destinationFilePath,
                     progress,
                     cancellation.Token);
             }
@@ -367,7 +394,10 @@ public sealed class UpdateWindowViewModel : INotifyPropertyChanged, IDisposable
                     checkResult,
                     asset,
                     State.Progress,
-                    result.Value));
+                    result.Value)
+                {
+                    ResolvedDestinationFilePath = destinationFilePath,
+                });
             }
             else
             {
@@ -379,7 +409,10 @@ public sealed class UpdateWindowViewModel : INotifyPropertyChanged, IDisposable
                     checkResult,
                     asset,
                     State.Progress,
-                    Error: result.Error));
+                    Error: result.Error)
+                {
+                    ResolvedDestinationFilePath = destinationFilePath,
+                });
             }
         }
         catch (OperationCanceledException exception) when (cancellation.IsCancellationRequested)
@@ -389,7 +422,10 @@ public sealed class UpdateWindowViewModel : INotifyPropertyChanged, IDisposable
                 checkResult,
                 asset,
                 State.Progress,
-                Error: CanceledError("The update download was canceled.", exception)));
+                Error: CanceledError("The update download was canceled.", exception))
+            {
+                ResolvedDestinationFilePath = destinationFilePath,
+            });
         }
         catch (Exception exception)
         {
@@ -398,7 +434,10 @@ public sealed class UpdateWindowViewModel : INotifyPropertyChanged, IDisposable
                 checkResult,
                 asset,
                 State.Progress,
-                Error: UnexpectedError("The update download could not be completed.", exception)));
+                Error: UnexpectedError("The update download could not be completed.", exception))
+            {
+                ResolvedDestinationFilePath = destinationFilePath,
+            });
         }
         finally
         {
@@ -515,7 +554,8 @@ public sealed class UpdateWindowViewModel : INotifyPropertyChanged, IDisposable
     private (
         CancellationTokenSource Cancellation,
         UpdateCheckResult CheckResult,
-        ReleaseAsset Asset)? BeginDownload()
+        ReleaseAsset Asset,
+        string DestinationFilePath)? BeginDownload(string destinationFilePath)
     {
         CancellationTokenSource cancellation;
         UpdateCheckResult checkResult;
@@ -543,10 +583,11 @@ public sealed class UpdateWindowViewModel : INotifyPropertyChanged, IDisposable
                 checkResult,
                 asset,
                 new DownloadProgress(0, asset.Size));
+            _state = _state with { ResolvedDestinationFilePath = destinationFilePath };
         }
 
         RaiseStateChanged();
-        return (cancellation, checkResult, asset);
+        return (cancellation, checkResult, asset, destinationFilePath);
     }
 
     private void ReportProgress(DownloadProgress progress)
@@ -669,6 +710,11 @@ public sealed class UpdateWindowViewModel : INotifyPropertyChanged, IDisposable
             ? $"{bytes.ToString("N0", CultureInfo.CurrentCulture)} {units[unitIndex]}"
             : $"{value.ToString("N1", CultureInfo.CurrentCulture)} {units[unitIndex]}";
     }
+
+    private static string FormatAsset(ReleaseAsset asset) =>
+        string.IsNullOrWhiteSpace(asset.ContentType)
+            ? $"{asset.Name} ({FormatBytes(asset.Size)})"
+            : $"{asset.Name} ({FormatBytes(asset.Size)}, {asset.ContentType})";
 
     private static UpdateError CanceledError(
         string message,

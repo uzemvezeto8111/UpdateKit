@@ -12,10 +12,9 @@ internal sealed record MainFormSettingsState(
 
 internal static class MainFormSettingsMapper
 {
-    public static MainFormSettingsState ToFormState(ApplicationSettings settings, string destinationFileName)
+    public static MainFormSettingsState ToFormState(ApplicationSettings settings)
     {
         ArgumentNullException.ThrowIfNull(settings);
-        ArgumentException.ThrowIfNullOrWhiteSpace(destinationFileName);
         var directory = settings.RememberDestinationDirectory &&
             Directory.Exists(settings.LastDestinationDirectory)
                 ? settings.LastDestinationDirectory!
@@ -26,8 +25,8 @@ internal static class MainFormSettingsMapper
             settings.RememberRepository ? settings.RepositoryName ?? string.Empty : string.Empty,
             settings.IncludePrereleaseVersions,
             settings.RememberAssetSelection ? settings.AssetSelectionMode : SampleAssetSelectionMode.Extension,
-            settings.RememberAssetSelection ? settings.AssetSelectionValue : ".zip",
-            Path.Combine(directory, destinationFileName));
+            settings.RememberAssetSelection ? settings.AssetSelectionValue : ".nupkg",
+            directory);
     }
 
     public static ApplicationSettings Capture(
@@ -42,7 +41,10 @@ internal static class MainFormSettingsMapper
         string? destinationDirectory = null;
         try
         {
-            destinationDirectory = Path.GetDirectoryName(Path.GetFullPath(destinationFilePath));
+            var fullPath = Path.GetFullPath(destinationFilePath);
+            destinationDirectory = Directory.Exists(fullPath)
+                ? fullPath
+                : Path.GetDirectoryName(fullPath);
         }
         catch (Exception exception) when (exception is ArgumentException or IOException or NotSupportedException)
         {
@@ -55,7 +57,7 @@ internal static class MainFormSettingsMapper
             AssetSelectionMode = settings.RememberAssetSelection ? assetMode : SampleAssetSelectionMode.Extension,
             AssetSelectionValue = settings.RememberAssetSelection && !string.IsNullOrWhiteSpace(assetValue)
                 ? assetValue.Trim()
-                : ".zip",
+                : ".nupkg",
             LastDestinationDirectory = settings.RememberDestinationDirectory ? destinationDirectory : null,
         };
     }

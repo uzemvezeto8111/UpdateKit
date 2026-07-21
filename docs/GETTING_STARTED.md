@@ -88,10 +88,12 @@ Tags may be `1.4.1` or `v1.4.1`. An uppercase `V`, whitespace, missing version c
 ```csharp
 var assetResult = client.SelectAssetByExactName(
     check.LatestRelease,
-    "MyProduct-win-x64.zip");
+    "MyProduct-setup.exe");
 
 // Alternatives:
-// client.SelectAssetByExtension(check.LatestRelease, ".zip");
+// client.SelectAssetByExtension(check.LatestRelease, ".msi");
+// client.SelectAssetByExtension(check.LatestRelease, "nupkg");
+// client.SelectAssetByExtension(check.LatestRelease, ".tar.gz");
 // client.SelectAssetByPredicate(check.LatestRelease, asset => asset.Name.Contains("win-x64"));
 
 if (!assetResult.IsSuccess)
@@ -103,12 +105,12 @@ if (!assetResult.IsSuccess)
 var asset = assetResult.Value;
 ```
 
-Every selector returns the first match in release-asset order. Exact names and predicate behavior are case-sensitive unless the predicate chooses otherwise. Extension matching is case-insensitive and accepts either `zip` or `.zip`.
+Every selector returns the first match in release-asset order. Exact names and predicate behavior are case-sensitive unless the predicate chooses otherwise. Extension matching is case-insensitive, accepts values with or without a leading dot, and supports arbitrary and multi-part suffixes such as `.exe`, `.msi`, `.nupkg`, `.7z`, and `.tar.gz`. The selected asset's original filename is preserved.
 
 ## 5. Download with progress and cancellation
 
 ```csharp
-var destination = Path.GetFullPath("MyProduct-win-x64.zip");
+var destination = Path.GetFullPath(asset.Name);
 using var cancellation = new CancellationTokenSource();
 var progress = new Progress<DownloadProgress>(value =>
 {
@@ -135,7 +137,9 @@ if (!download.IsSuccess)
 }
 ```
 
-The parent directory must already exist. UpdateKit streams to a unique temporary file beside the destination, then commits the destination only after success. Cancellation is reported as `DownloadCanceled`, temporary-file cleanup is attempted on handled failures, and a pre-existing destination remains intact if the operation fails before replacement. Cleanup is best-effort if another process locks the temporary file or permissions change during the operation.
+The Core download API requires an explicit file path whose parent directory already exists. UpdateKit streams to a unique temporary file beside the destination, then commits the destination only after success. Cancellation is reported as `DownloadCanceled`, temporary-file cleanup is attempted on handled failures, and a pre-existing destination remains intact if the operation fails before replacement. Cleanup is best-effort if another process locks the temporary file or permissions change during the operation.
+
+UpdateKit only downloads the asset bytes. It does not install or execute installers, run scripts, or extract archives. Host applications decide what to do with the successfully downloaded file.
 
 Retries are disabled by default. `MaxRetryAttempts` counts retries after the initial request, so `3` allows no more than four total attempts. The valid range is 0–100 retries; delays must be non-negative, no greater than `Int32.MaxValue` milliseconds, and ordered so `MaximumDelay >= InitialDelay`; jitter must be finite and between 0 and 1. Invalid settings throw `UpdateConfigurationException` when the client or standalone downloader is constructed.
 
@@ -158,7 +162,7 @@ var download = await client.DownloadAndVerifyAsync(
     cancellation.Token);
 ```
 
-The value must contain exactly 64 hexadecimal characters. A mismatch returns `ChecksumMismatch` and removes the downloaded file.
+The value must contain exactly 64 hexadecimal characters. A mismatch returns `ChecksumMismatch` and removes the downloaded file. A match verifies integrity against the supplied digest but does not establish publisher identity.
 
 ## 7. Verify through a checksum-file asset
 
@@ -184,8 +188,8 @@ var download = await client.DownloadAndVerifyFromChecksumFileAsync(
 A supported checksum-file entry looks like either of these:
 
 ```text
-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef  MyProduct-win-x64.zip
-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef *MyProduct-win-x64.zip
+0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef  MyProduct-setup.exe
+0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef *MyProduct-setup.exe
 ```
 
 Filenames can contain spaces. Matching is ordinal and case-sensitive. Missing entries return `ChecksumNotFound`; malformed or conflicting entries return `InvalidChecksum`.
@@ -201,7 +205,7 @@ var options = new UpdateDialogOptions(
     client,
     currentVersion: "1.4.0",
     destinationFilePath: destination,
-    assetSelector: release => client.SelectAssetByExtension(release, ".zip"))
+    assetSelector: release => client.SelectAssetByExtension(release, ".exe"))
 {
     DialogTitle = "MyProduct Update",
     CheckForUpdateOnShown = true,
@@ -225,6 +229,8 @@ else if (dialog.LastError is { } error)
 ```
 
 Use `ExpectedSha256` instead of `ChecksumAssetSelector` for a direct checksum. A dialog instance is single-use. Create a new instance each time, show it with the host form as owner, and dispose it afterward. It prevents duplicate operations and safely cancels active work when the user closes it.
+
+`DestinationFilePath` may be an explicit full file path or an existing directory. Explicit paths are preserved; for a directory, the dialog appends the selected asset's original filename. The directory must already exist.
 
 For eligible GitHub releases, the standard dialog displays **View release** before the download action. It opens only a validated, credential-free GitHub HTTPS release page; launch failures are shown without disabling the update workflow.
 
@@ -253,7 +259,7 @@ var options = new UpdateWindowOptions(
     client,
     currentVersion: "1.4.0",
     destinationFilePath: destination,
-    assetSelector: release => client.SelectAssetByExtension(release, ".zip"))
+    assetSelector: release => client.SelectAssetByExactName(release, "MyProduct-setup.exe"))
 {
     WindowTitle = "MyProduct Update",
     CheckForUpdateOnLoaded = true,
@@ -277,7 +283,7 @@ else if (window.LastError is { } error)
 }
 ```
 
-Use a new window for every display. It borrows the `UpdateClient`, blocks duplicate operations, and cancels active work before closing. For custom MVVM rendering, bind to `UpdateWindowViewModel`; it exposes release and asset details, presentation text, progress, errors, state flags, and separate check, download, view-release, primary-action, and cancellation commands. `IsViewReleaseVisible` and `CanViewRelease` support custom rendering of the HTTPS-only GitHub release-page action.
+Use a new window for every display. It borrows the `UpdateClient`, blocks duplicate operations, and cancels active work before closing. Its destination follows the same explicit-file-or-existing-directory rule as the WinForms dialog. For custom MVVM rendering, bind to `UpdateWindowViewModel`; it exposes release and asset details, presentation text, progress, errors, state flags, and separate check, download, view-release, primary-action, and cancellation commands. `IsViewReleaseVisible` and `CanViewRelease` support custom rendering of the HTTPS-only GitHub release-page action.
 
 The minimal complete host is [UpdateKit.Minimal.Wpf](../samples/UpdateKit.Minimal.Wpf).
 

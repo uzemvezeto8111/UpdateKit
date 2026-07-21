@@ -47,6 +47,8 @@ internal sealed record UpdateDialogViewState(
 
     public bool CanClose => !IsBusy;
 
+    public string? ResolvedDestinationFilePath { get; init; }
+
     public bool IsViewReleaseVisible =>
         ReleasePageUriValidator.TryGetSafeReleasePageUri(
             CheckResult?.LatestRelease.HtmlUrl,

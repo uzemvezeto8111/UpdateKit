@@ -10,6 +10,9 @@ namespace UpdateKit.WinForms;
 /// </summary>
 public sealed class UpdateDialog : Form
 {
+    internal const string DownloadSafetyMessage =
+        "UpdateKit downloads the selected release asset but does not install or run it.";
+
     private readonly UpdateDialogOptions _options;
     private readonly UpdateDialogController _controller;
     private readonly ReleasePageAction _releasePageAction;
@@ -198,7 +201,7 @@ public sealed class UpdateDialog : Form
         {
             AutoSize = true,
             ColumnCount = 2,
-            RowCount = 3,
+            RowCount = 4,
             Dock = DockStyle.Fill,
             Margin = new Padding(0, 0, 0, 12),
         };
@@ -208,6 +211,16 @@ public sealed class UpdateDialog : Form
         AddDetailRow(layout, 0, "Available version:", _versionValueLabel, "Available version");
         AddDetailRow(layout, 1, "Published:", _publishedValueLabel, "Publication date");
         AddDetailRow(layout, 2, "Asset:", _assetValueLabel, "Selected release asset");
+        var safetyLabel = new Label
+        {
+            AutoSize = true,
+            Dock = DockStyle.Fill,
+            Margin = new Padding(0, 7, 0, 0),
+            Text = DownloadSafetyMessage,
+            AccessibleName = "Download safety notice",
+        };
+        layout.Controls.Add(safetyLabel, 0, 3);
+        layout.SetColumnSpan(safetyLabel, 2);
         return layout;
     }
 
@@ -360,16 +373,28 @@ public sealed class UpdateDialog : Form
         }
         else if (state.CanDownload)
         {
-            if (_options.ConfirmBeforeDownload && !ConfirmDownload())
+            if (_options.ConfirmBeforeDownload && state.SelectedAsset is { } selectedAsset)
             {
-                return;
+                var destinationResult = ReleaseAssetDestinationResolver.Resolve(
+                    _options.DestinationFilePath,
+                    selectedAsset);
+                if (!destinationResult.IsSuccess)
+                {
+                    await _controller.DownloadAsync();
+                    return;
+                }
+
+                if (!ConfirmDownload(destinationResult.Value))
+                {
+                    return;
+                }
             }
 
             await _controller.DownloadAsync();
         }
     }
 
-    private bool ConfirmDownload()
+    private bool ConfirmDownload(string destinationFilePath)
     {
         using var dialog = new Form
         {
@@ -391,7 +416,7 @@ public sealed class UpdateDialog : Form
             AutoSize = true,
             MaximumSize = new Size(440, 0),
             Text = $"Download {_controller.State.SelectedAsset?.Name ?? "the selected update"} " +
-                $"to {_options.DestinationFilePath}?",
+                $"to {destinationFilePath}?",
             AccessibleName = "Download confirmation message",
         };
         var downloadButton = new Button
@@ -500,7 +525,7 @@ public sealed class UpdateDialog : Form
             .ToString("g", CultureInfo.CurrentCulture) ?? "—";
         _assetValueLabel.Text = state.SelectedAsset is null
             ? "—"
-            : $"{state.SelectedAsset.Name} ({FormatBytes(state.SelectedAsset.Size)})";
+            : FormatAsset(state.SelectedAsset);
         _releaseNotesTextBox.Text = string.IsNullOrWhiteSpace(release?.Body)
             ? "No release notes were provided."
             : release.Body;
@@ -615,4 +640,9 @@ public sealed class UpdateDialog : Form
             ? $"{bytes.ToString("N0", CultureInfo.CurrentCulture)} {units[unitIndex]}"
             : $"{value.ToString("N1", CultureInfo.CurrentCulture)} {units[unitIndex]}";
     }
+
+    private static string FormatAsset(ReleaseAsset asset) =>
+        string.IsNullOrWhiteSpace(asset.ContentType)
+            ? $"{asset.Name} ({FormatBytes(asset.Size)})"
+            : $"{asset.Name} ({FormatBytes(asset.Size)}, {asset.ContentType})";
 }

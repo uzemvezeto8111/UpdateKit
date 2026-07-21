@@ -31,4 +31,6 @@ internal sealed record UpdateWindowState(
         Status is UpdateWindowStatus.Checking or UpdateWindowStatus.Downloading;
 
     public bool CanClose => !IsBusy;
+
+    public string? ResolvedDestinationFilePath { get; init; }
 }

@@ -34,6 +34,10 @@ $projects = @(
     [pscustomobject]@{
         Id = "UpdateKit.WinForms"
         Path = "src/UpdateKit.WinForms/UpdateKit.WinForms.csproj"
+    },
+    [pscustomobject]@{
+        Id = "UpdateKit.Wpf"
+        Path = "src/UpdateKit.Wpf/UpdateKit.Wpf.csproj"
     }
 )
 
@@ -143,7 +147,7 @@ try
                 throw "Package '$packagePath' metadata does not match '$($project.Id) $releaseVersion'."
             }
 
-            if ($project.Id -ceq "UpdateKit.WinForms")
+            if ($project.Id -cne "UpdateKit.Core")
             {
                 $coreDependency = $nuspec.package.metadata.dependencies.group.dependency |
                     Where-Object { $_.id -ceq "UpdateKit.Core" } |

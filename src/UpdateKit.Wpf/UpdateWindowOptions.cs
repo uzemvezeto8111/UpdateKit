@@ -23,7 +23,10 @@ public sealed class UpdateWindowOptions
     /// <summary>Gets the caller's current Semantic Versioning tag.</summary>
     public string CurrentVersion { get; }
 
-    /// <summary>Gets the absolute destination file path.</summary>
+    /// <summary>
+    /// Gets the absolute destination file path or an existing destination directory. When this
+    /// value is a directory, the selected release asset's original filename is appended.
+    /// </summary>
     public string DestinationFilePath { get; }
 
     /// <summary>Gets the host-provided primary asset selector.</summary>

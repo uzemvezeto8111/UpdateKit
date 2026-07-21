@@ -93,7 +93,7 @@ public sealed class SampleConfigurationValidatorTests
         var input = CreateValidInput(directory) with
         {
             AssetSelectionMode = SampleAssetSelectionMode.Extension,
-            AssetSelectionValue = "ZIP",
+            AssetSelectionValue = "TAR.GZ",
         };
         var configuration = AssertValid(input);
         using var httpClient = CreateNetworkRejectingClient();
@@ -102,13 +102,66 @@ public sealed class SampleConfigurationValidatorTests
         var options = configuration.CreateDialogOptions(client);
         var release = CreateRelease(
             new ReleaseAsset("update.exe", new Uri("https://example.invalid/update.exe"), 1),
-            new ReleaseAsset("update.zip", new Uri("https://example.invalid/update.zip"), 2));
+            new ReleaseAsset("update.tar.gz", new Uri("https://example.invalid/update.tar.gz"), 2));
         var selection = options.AssetSelector(release);
 
         Assert.True(selection.IsSuccess);
-        Assert.Equal("update.zip", selection.Value.Name);
+        Assert.Equal("update.tar.gz", selection.Value.Name);
         Assert.Equal("1.2.3", options.CurrentVersion);
         Assert.Equal(configuration.DestinationFilePath, options.DestinationFilePath);
+    }
+
+    [Fact]
+    public void CreateDialogOptions_ExactNameSelectionSupportsNonZipAsset()
+    {
+        using var directory = new TemporaryDirectory();
+        var configuration = AssertValid(CreateValidInput(directory) with
+        {
+            AssetSelectionMode = SampleAssetSelectionMode.ExactName,
+            AssetSelectionValue = "My Product Setup.msi",
+        });
+        using var httpClient = CreateNetworkRejectingClient();
+        var client = new UpdateClient(httpClient, configuration.CreateClientOptions());
+        var expected = new ReleaseAsset(
+            "My Product Setup.msi",
+            new Uri("https://example.invalid/MyProduct.msi"),
+            10);
+
+        var selection = configuration.CreateDialogOptions(client).AssetSelector(
+            CreateRelease(expected));
+
+        Assert.True(selection.IsSuccess);
+        Assert.Same(expected, selection.Value);
+    }
+
+    [Fact]
+    public void Validate_ExistingDestinationDirectoryIsAcceptedAndPreserved()
+    {
+        using var directory = new TemporaryDirectory();
+
+        var configuration = AssertValid(CreateValidInput(directory) with
+        {
+            DestinationFilePath = directory.Path,
+        });
+
+        Assert.Equal(Path.GetFullPath(directory.Path), configuration.DestinationFilePath);
+    }
+
+    [Theory]
+    [InlineData("Product package.tar.gz")]
+    [InlineData("Product setup.exe")]
+    [InlineData("Product installer.msi")]
+    public void Validate_ExplicitGenericDestinationFilenameIsPreserved(string fileName)
+    {
+        using var directory = new TemporaryDirectory();
+        var destination = Path.Combine(directory.Path, fileName);
+
+        var configuration = AssertValid(CreateValidInput(directory) with
+        {
+            DestinationFilePath = destination,
+        });
+
+        Assert.Equal(destination, configuration.DestinationFilePath);
     }
 
     [Fact]
@@ -201,6 +254,39 @@ public sealed class SampleConfigurationValidatorTests
 
     [Theory]
     [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void Validate_MissingDestinationReturnsActionableError(string? destination)
+    {
+        using var directory = new TemporaryDirectory();
+
+        var result = SampleConfigurationValidator.Validate(CreateValidInput(directory) with
+        {
+            DestinationFilePath = destination,
+        });
+
+        Assert.False(result.IsValid);
+        Assert.Contains(
+            "A destination file path or existing directory is required.",
+            result.Errors);
+    }
+
+    [Fact]
+    public void Validate_InvalidDestinationFilenameReturnsActionableError()
+    {
+        using var directory = new TemporaryDirectory();
+
+        var result = SampleConfigurationValidator.Validate(CreateValidInput(directory) with
+        {
+            DestinationFilePath = Path.Combine(directory.Path, "invalid?.exe"),
+        });
+
+        Assert.False(result.IsValid);
+        Assert.Contains("The destination file name is invalid.", result.Errors);
+    }
+
+    [Theory]
+    [InlineData(null)]
     [InlineData("   ")]
     public void Validate_MissingChecksumFileName_ReturnsError(string? value)
     {
@@ -261,8 +347,8 @@ public sealed class SampleConfigurationValidatorTests
             "1.2.3",
             false,
             SampleAssetSelectionMode.ExactName,
-            "update.zip",
-            Path.Combine(directory.Path, "update.zip"),
+            "update.exe",
+            Path.Combine(directory.Path, "update.exe"),
             SampleVerificationMode.None,
             null);
 

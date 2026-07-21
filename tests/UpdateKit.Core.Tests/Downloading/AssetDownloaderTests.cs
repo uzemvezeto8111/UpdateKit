@@ -42,6 +42,40 @@ public sealed class AssetDownloaderTests
         AssertNoTemporaryFiles(directory);
     }
 
+    [Theory]
+    [InlineData("MyProduct-setup.exe")]
+    [InlineData("MyProduct-installer.msi")]
+    public async Task DownloadAsync_ExecutableLookingAssetIsOnlySavedAsData(string assetName)
+    {
+        var payload = Encoding.UTF8.GetBytes("not executed; downloaded bytes only");
+        using var directory = new TemporaryDirectory();
+        var destinationPath = directory.GetPath(assetName);
+        var asset = CreateAsset(payload.LongLength, assetName);
+        var handler = new StubHttpMessageHandler(
+            (_, _) => Task.FromResult(ResponseWithBytes(payload)));
+
+        var result = await DownloadAsync(handler, destinationPath, asset);
+
+        Assert.True(result.IsSuccess);
+        Assert.Same(asset, result.Value.Asset);
+        Assert.Equal(assetName, Path.GetFileName(result.Value.FilePath));
+        Assert.Equal(payload, await File.ReadAllBytesAsync(destinationPath));
+        Assert.Equal(1, handler.CallCount);
+        AssertNoTemporaryFiles(directory);
+    }
+
+    [Fact]
+    public void CoreDownloadAssembly_HasNoProcessLaunchOrArchiveExtractionDependency()
+    {
+        var referencedAssemblies = typeof(AssetDownloader).Assembly
+            .GetReferencedAssemblies()
+            .Select(reference => reference.Name)
+            .ToArray();
+
+        Assert.DoesNotContain("System.Diagnostics.Process", referencedAssemblies);
+        Assert.DoesNotContain("System.IO.Compression", referencedAssemblies);
+    }
+
     [Fact]
     public async Task DownloadAsync_ReportsUnknownTotalWhenContentLengthIsAbsent()
     {
@@ -334,12 +368,14 @@ public sealed class AssetDownloaderTests
         };
     }
 
-    private static ReleaseAsset CreateAsset(long size = 10) =>
+    private static ReleaseAsset CreateAsset(
+        long size = 10,
+        string name = "UpdateKit.zip") =>
         new(
-            "UpdateKit.zip",
-            new Uri("https://example.test/releases/UpdateKit.zip"),
+            name,
+            new Uri($"https://example.test/releases/{Uri.EscapeDataString(name)}"),
             size,
-            "application/zip");
+            "application/octet-stream");
 
     private static void AssertDownloadFailed(UpdateResult<DownloadResult> result)
     {

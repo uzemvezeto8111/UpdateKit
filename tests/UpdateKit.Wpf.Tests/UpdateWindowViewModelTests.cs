@@ -33,6 +33,7 @@ public sealed class UpdateWindowViewModelTests
         Assert.False(viewModel.DownloadCommand.CanExecute(null));
         Assert.False(viewModel.CancelCommand.CanExecute(null));
         Assert.False(viewModel.ViewReleaseCommand.CanExecute(null));
+        Assert.Contains("does not install or run", viewModel.DownloadSafetyMessage, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -55,12 +56,41 @@ public sealed class UpdateWindowViewModelTests
         Assert.Equal("v2.0.0", viewModel.AvailableVersion);
         Assert.Equal("Release notes", viewModel.ReleaseNotes);
         Assert.NotEqual("—", viewModel.PublishedText);
-        Assert.Equal("UpdateKit.zip (2.0 KB)", viewModel.SelectedAssetText);
+        Assert.Equal("UpdateKit.zip (2.0 KB, application/octet-stream)", viewModel.SelectedAssetText);
         Assert.True(viewModel.IsViewReleaseVisible);
         Assert.True(viewModel.CanViewRelease);
         Assert.True(viewModel.ViewReleaseCommand.CanExecute(null));
         Assert.Contains(nameof(UpdateWindowViewModel.Status), changedProperties);
         Assert.Contains(nameof(UpdateWindowViewModel.ReleaseNotes), changedProperties);
+    }
+
+    [Fact]
+    public async Task DownloadAsync_ExistingDirectoryPreservesSelectedMultipartAssetName()
+    {
+        var payload = Encoding.UTF8.GetBytes("generic tarball payload");
+        var assetName = "My Product-linux-x64.tar.gz";
+        var assetUrl = new Uri("https://downloads.example.test/MyProduct.tar.gz");
+        var handler = RouteReleaseAndAsset("v2.0.0", assetUrl, payload, assetName);
+        using var httpClient = new HttpClient(handler, disposeHandler: false);
+        using var directory = new TemporaryDirectory();
+        var client = CreateClient(httpClient);
+        var options = new UpdateWindowOptions(
+            client,
+            "1.0.0",
+            directory.Path,
+            release => client.SelectAssetByExtension(release, ".tar.gz"));
+        using var viewModel = new UpdateWindowViewModel(options);
+
+        await viewModel.CheckForUpdateAsync();
+        Assert.Equal(
+            "My Product-linux-x64.tar.gz (23 B, application/octet-stream)",
+            viewModel.SelectedAssetText);
+        await viewModel.DownloadAsync();
+
+        var expectedPath = directory.GetPath(assetName);
+        Assert.Equal(UpdateWindowStatus.Succeeded, viewModel.Status);
+        Assert.Equal(expectedPath, viewModel.DownloadResult?.FilePath);
+        Assert.Equal(payload, await File.ReadAllBytesAsync(expectedPath));
     }
 
     [Fact]
@@ -417,21 +447,23 @@ public sealed class UpdateWindowViewModelTests
     private static StubHttpMessageHandler RouteReleaseAndAsset(
         string tag,
         Uri assetUrl,
-        byte[] payload) =>
+        byte[] payload,
+        string assetName = "UpdateKit.zip") =>
         new((request, _) => Task.FromResult(
             request.RequestUri?.Host == "api.github.com"
-                ? JsonResponse(CreateReleasePayload(tag, assetUrl, payload.LongLength))
+                ? JsonResponse(CreateReleasePayload(tag, assetUrl, payload.LongLength, assetName: assetName))
                 : BytesResponse(payload)));
 
     private static object CreateReleasePayload(
         string tag,
         Uri assetUrl,
         long size,
-        Uri? checksumUrl = null)
+        Uri? checksumUrl = null,
+        string assetName = "UpdateKit.zip")
     {
         var assets = new List<object>
         {
-            CreateAssetPayload("UpdateKit.zip", assetUrl, size),
+            CreateAssetPayload(assetName, assetUrl, size),
         };
 
         if (checksumUrl is not null)

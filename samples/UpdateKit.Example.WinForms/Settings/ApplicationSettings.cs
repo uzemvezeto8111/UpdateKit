@@ -21,7 +21,7 @@ internal sealed record ApplicationSettings
     public string? RepositoryOwner { get; init; }
     public string? RepositoryName { get; init; }
     public SampleAssetSelectionMode AssetSelectionMode { get; init; } = SampleAssetSelectionMode.Extension;
-    public string AssetSelectionValue { get; init; } = ".zip";
+    public string AssetSelectionValue { get; init; } = ".nupkg";
     public string? LastDestinationDirectory { get; init; }
     public string DefaultDownloadDirectory { get; init; } = string.Empty;
     public int MaximumRetryCount { get; init; }

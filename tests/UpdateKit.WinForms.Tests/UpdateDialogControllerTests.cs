@@ -27,6 +27,37 @@ public sealed class UpdateDialogControllerTests
         Assert.Null(state.CheckResult);
         Assert.Null(state.SelectedAsset);
         Assert.Null(state.Error);
+        Assert.Contains("does not install or run", UpdateDialog.DownloadSafetyMessage, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task DownloadAsync_ExistingDestinationDirectoryUsesSelectedAssetFilename()
+    {
+        var payload = Encoding.UTF8.GetBytes("generic MSI payload");
+        var assetUrl = new Uri("https://downloads.example.test/My Product Setup.msi");
+        var handler = RouteReleaseAndAsset(
+            "v2.0.0",
+            assetUrl,
+            payload,
+            "My Product Setup.msi");
+        using var httpClient = new HttpClient(handler, disposeHandler: false);
+        using var directory = new TemporaryDirectory();
+        var client = CreateClient(httpClient);
+        var options = new UpdateDialogOptions(
+            client,
+            "1.0.0",
+            directory.Path,
+            release => client.SelectAssetByExtension(release, ".msi"));
+        using var controller = new UpdateDialogController(options);
+
+        await controller.CheckForUpdateAsync();
+        await controller.DownloadAsync();
+
+        var expectedPath = directory.GetPath("My Product Setup.msi");
+        Assert.Equal(UpdateDialogStatus.Succeeded, controller.State.Status);
+        Assert.Equal("My Product Setup.msi", controller.State.SelectedAsset?.Name);
+        Assert.Equal(expectedPath, controller.State.DownloadResult?.FilePath);
+        Assert.Equal(payload, await File.ReadAllBytesAsync(expectedPath));
     }
 
     [Fact]
@@ -375,21 +406,23 @@ public sealed class UpdateDialogControllerTests
     private static StubHttpMessageHandler RouteReleaseAndAsset(
         string tag,
         Uri assetUrl,
-        byte[] payload) =>
+        byte[] payload,
+        string assetName = "UpdateKit.zip") =>
         new((request, _) => Task.FromResult(
             request.RequestUri?.Host == "api.github.com"
-                ? JsonResponse(CreateReleasePayload(tag, assetUrl, payload.LongLength))
+                ? JsonResponse(CreateReleasePayload(tag, assetUrl, payload.LongLength, assetName: assetName))
                 : BytesResponse(payload)));
 
     private static object CreateReleasePayload(
         string tag,
         Uri assetUrl,
         long size,
-        Uri? checksumUrl = null)
+        Uri? checksumUrl = null,
+        string assetName = "UpdateKit.zip")
     {
         var assets = new List<object>
         {
-            CreateAssetPayload("UpdateKit.zip", assetUrl, size),
+            CreateAssetPayload(assetName, assetUrl, size),
         };
 
         if (checksumUrl is not null)

@@ -78,7 +78,7 @@ public sealed class JsonApplicationSettingsStoreTests
         Assert.Equal(ApplicationTheme.Dark, result.Settings.Theme);
         Assert.Equal(2, result.Settings.MaximumRetryCount);
         Assert.Equal(defaults.DefaultDownloadDirectory, result.Settings.DefaultDownloadDirectory);
-        Assert.Equal(".zip", result.Settings.AssetSelectionValue);
+        Assert.Equal(".nupkg", result.Settings.AssetSelectionValue);
     }
 
     [Fact]

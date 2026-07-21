@@ -7,8 +7,6 @@ namespace UpdateKit.Example.WinForms;
 
 internal sealed class MainForm : Form
 {
-    private const string DefaultDestinationFileName = "UpdateKit-update.zip";
-
     private readonly IApplicationSettingsStore _settingsStore;
     private readonly ApplicationSettings _defaults;
     private readonly DestinationFolderCompletionAction _folderCompletionAction;
@@ -120,6 +118,7 @@ internal sealed class MainForm : Form
             Dock = DockStyle.Fill,
             Margin = new Padding(0, 0, 0, 16),
             Text = "Configure a GitHub repository and open the reusable UpdateKit dialog. " +
+                "Any release-asset file type can be downloaded; UpdateKit never installs or runs it. " +
                 "Preferences may be stored locally; access tokens are never saved.",
             AccessibleName = "Example instructions",
         }, 0, 0);
@@ -163,7 +162,10 @@ internal sealed class MainForm : Form
         _assetSelectionModeComboBox.Items.AddRange(["Exact asset name", "File extension"]);
         _assetSelectionModeComboBox.SelectedIndexChanged += (_, _) => UpdateAssetSelectionPrompt();
         ConfigureTextBox(_assetSelectionValueTextBox, "Asset selection value", string.Empty);
-        ConfigureTextBox(_destinationTextBox, "Destination file path", "Choose where the asset will be saved");
+        ConfigureTextBox(
+            _destinationTextBox,
+            "Destination file path or existing directory",
+            "Existing directory, or a full path for the downloaded file");
         ConfigureButton(_browseButton, "Browse...", "Choose destination file");
         _browseButton.Click += BrowseButton_Click;
 
@@ -232,7 +234,7 @@ internal sealed class MainForm : Form
 
     private void ApplySettingsToForm()
     {
-        var state = MainFormSettingsMapper.ToFormState(_settings, DefaultDestinationFileName);
+        var state = MainFormSettingsMapper.ToFormState(_settings);
         _repositoryOwnerTextBox.Text = state.RepositoryOwner;
         _repositoryNameTextBox.Text = state.RepositoryName;
         _currentVersionTextBox.Text = GetApplicationSemanticVersion();
@@ -398,7 +400,9 @@ internal sealed class MainForm : Form
         var exactName = GetAssetSelectionMode() == SampleAssetSelectionMode.ExactName;
         _assetSelectionValueLabel.Text = exactName ? "Asset name:" : "File extension:";
         _assetSelectionValueTextBox.AccessibleName = exactName ? "Exact release asset name" : "Release asset file extension";
-        _assetSelectionValueTextBox.PlaceholderText = exactName ? "For example: UpdateKit-win-x64.zip" : "For example: .zip";
+        _assetSelectionValueTextBox.PlaceholderText = exactName
+            ? "For example: MyProduct-setup.exe or MyProduct-linux.tar.gz"
+            : "For example: .exe, .msi, .nupkg, or .tar.gz";
     }
 
     private void UpdateVerificationPrompt()
@@ -471,13 +475,18 @@ internal sealed class MainForm : Form
     private static string GetApplicationSemanticVersion()
     {
         var version = typeof(MainForm).Assembly.GetName().Version;
-        return version is null ? "0.2.1" : $"{Math.Max(0, version.Major)}.{Math.Max(0, version.Minor)}.{Math.Max(0, version.Build)}";
+        return version is null ? "0.3.0" : $"{Math.Max(0, version.Major)}.{Math.Max(0, version.Minor)}.{Math.Max(0, version.Build)}";
     }
 
     private static string GetExistingDirectory(string filePath, string fallback)
     {
         try
         {
+            if (Directory.Exists(filePath))
+            {
+                return Path.GetFullPath(filePath);
+            }
+
             var directory = Path.GetDirectoryName(filePath);
             return directory is not null && Directory.Exists(directory) ? directory : fallback;
         }

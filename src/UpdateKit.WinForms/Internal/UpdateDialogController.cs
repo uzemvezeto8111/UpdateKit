@@ -1,5 +1,7 @@
 namespace UpdateKit.WinForms.Internal;
 
+using UpdateKit.Desktop.Internal;
+
 internal sealed class UpdateDialogController : IDisposable
 {
     private readonly object _sync = new();
@@ -118,13 +120,32 @@ internal sealed class UpdateDialogController : IDisposable
 
     public async Task<bool> DownloadAsync()
     {
-        var operation = BeginDownload();
+        var currentState = State;
+        if (!currentState.CanDownload || currentState.SelectedAsset is null)
+        {
+            return false;
+        }
+
+        var destinationResult = ReleaseAssetDestinationResolver.Resolve(
+            _options.DestinationFilePath,
+            currentState.SelectedAsset);
+        if (!destinationResult.IsSuccess)
+        {
+            SetState(currentState with
+            {
+                Status = UpdateDialogStatus.Failed,
+                Error = destinationResult.Error,
+            });
+            return true;
+        }
+
+        var operation = BeginDownload(destinationResult.Value);
         if (operation is null)
         {
             return false;
         }
 
-        var (cancellation, checkResult, asset) = operation.Value;
+        var (cancellation, checkResult, asset, destinationFilePath) = operation.Value;
 
         try
         {
@@ -135,7 +156,7 @@ internal sealed class UpdateDialogController : IDisposable
             {
                 result = await _options.Client.DownloadAndVerifyAsync(
                         asset,
-                        _options.DestinationFilePath,
+                        destinationFilePath,
                         _options.ExpectedSha256,
                         progress,
                         cancellation.Token)
@@ -158,13 +179,16 @@ internal sealed class UpdateDialogController : IDisposable
                         UpdateDialogStatus.Failed,
                         checkResult,
                         asset,
-                        Error: checksumAssetResult.Error));
+                        Error: checksumAssetResult.Error)
+                    {
+                        ResolvedDestinationFilePath = destinationFilePath,
+                    });
                     return true;
                 }
 
                 result = await _options.Client.DownloadAndVerifyFromChecksumFileAsync(
                         asset,
-                        _options.DestinationFilePath,
+                        destinationFilePath,
                         checksumAssetResult.Value,
                         progress,
                         cancellation.Token)
@@ -174,7 +198,7 @@ internal sealed class UpdateDialogController : IDisposable
             {
                 result = await _options.Client.DownloadAsync(
                         asset,
-                        _options.DestinationFilePath,
+                        destinationFilePath,
                         progress,
                         cancellation.Token)
                     .ConfigureAwait(false);
@@ -187,7 +211,10 @@ internal sealed class UpdateDialogController : IDisposable
                     checkResult,
                     asset,
                     State.Progress,
-                    result.Value));
+                    result.Value)
+                {
+                    ResolvedDestinationFilePath = destinationFilePath,
+                });
             }
             else
             {
@@ -199,7 +226,10 @@ internal sealed class UpdateDialogController : IDisposable
                     checkResult,
                     asset,
                     State.Progress,
-                    Error: result.Error));
+                    Error: result.Error)
+                {
+                    ResolvedDestinationFilePath = destinationFilePath,
+                });
             }
         }
         catch (OperationCanceledException exception) when (cancellation.IsCancellationRequested)
@@ -209,7 +239,10 @@ internal sealed class UpdateDialogController : IDisposable
                 checkResult,
                 asset,
                 State.Progress,
-                Error: CanceledError("The update download was canceled.", exception)));
+                Error: CanceledError("The update download was canceled.", exception))
+            {
+                ResolvedDestinationFilePath = destinationFilePath,
+            });
         }
         catch (Exception exception)
         {
@@ -218,7 +251,10 @@ internal sealed class UpdateDialogController : IDisposable
                 checkResult,
                 asset,
                 State.Progress,
-                Error: UnexpectedError("The update download could not be completed.", exception)));
+                Error: UnexpectedError("The update download could not be completed.", exception))
+            {
+                ResolvedDestinationFilePath = destinationFilePath,
+            });
         }
         finally
         {
@@ -305,7 +341,8 @@ internal sealed class UpdateDialogController : IDisposable
     private (
         CancellationTokenSource Cancellation,
         UpdateCheckResult CheckResult,
-        ReleaseAsset Asset)? BeginDownload()
+        ReleaseAsset Asset,
+        string DestinationFilePath)? BeginDownload(string destinationFilePath)
     {
         UpdateDialogViewState nextState;
         Action<UpdateDialogViewState>? handler;
@@ -334,12 +371,13 @@ internal sealed class UpdateDialogController : IDisposable
                 checkResult,
                 asset,
                 new DownloadProgress(0, asset.Size));
+            nextState = nextState with { ResolvedDestinationFilePath = destinationFilePath };
             _state = nextState;
             handler = _stateChanged;
         }
 
         handler?.Invoke(nextState);
-        return (cancellation, checkResult, asset);
+        return (cancellation, checkResult, asset, destinationFilePath);
     }
 
     private void ReportProgress(DownloadProgress progress)

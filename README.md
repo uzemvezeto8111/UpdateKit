@@ -18,14 +18,14 @@ The repository is split into three libraries and three practical samples:
 ## Features
 
 - **Find the right release** - retrieve paginated GitHub Releases, exclude drafts, opt into prereleases, and compare `1.2.3` or `v1.2.3` tags according to Semantic Versioning 2.0.0.
-- **Select deterministically** - choose the first asset by exact name, normalized case-insensitive extension, or a caller-provided predicate.
+- **Select any release asset deterministically** - choose `.zip`, `.exe`, `.msi`, `.nupkg`, `.7z`, `.tar.gz`, or any other file by exact name, normalized case-insensitive extension, or a caller-provided predicate.
 - **Download without partial success** - stream into a unique temporary file, report byte and percentage progress, support cancellation and configurable transient retries, and replace the destination only after a complete transfer.
 - **Preserve existing files** - keep an existing destination intact when requests, streaming, cancellation, or pre-commit file operations fail.
 - **Verify what was downloaded** - validate a direct SHA-256 value or resolve the matching filename from a standard checksum-file asset; delete mismatched downloads.
 - **Host a native update experience** - show release name, version, notes, publication date, selected asset, progress, cancellation, completion, actionable errors, and a safe browser action for inspecting the GitHub release page before downloading; WinForms hosts can opt into centralized System, Light, or Dark theming.
 - **Compose with MVVM** - bind a custom WPF view directly to `UpdateWindowViewModel`, its presentation properties, and its check, download, view-release, and cancellation commands.
 - **Handle failures explicitly** - branch on stable `UpdateErrorCode` values instead of parsing exception or message text.
-- **Test without live services** - run 369 deterministic automated tests backed by custom HTTP handlers rather than the real GitHub API.
+- **Test without live services** - run 401 deterministic automated tests backed by custom HTTP handlers rather than the real GitHub API.
 
 ## Screenshots
 
@@ -61,7 +61,7 @@ Release executables are currently unsigned because the project has no code-signi
 
 ## For developers
 
-Clone the repository to build from source, run the samples, or reference `UpdateKit.Core`, `UpdateKit.WinForms`, or `UpdateKit.Wpf` from your application. Versioned NuGet packages for Core and WinForms are attached to GitHub Releases but are not automatically published to NuGet.org. The integration examples below show caller-owned `HttpClient`, update checks, asset selection, safe downloading, verification, and reusable desktop UI.
+Clone the repository to build from source, run the samples, or reference `UpdateKit.Core`, `UpdateKit.WinForms`, or `UpdateKit.Wpf` from your application. Versioned NuGet packages for Core, WinForms, and WPF are attached to GitHub Releases but are not automatically published to NuGet.org. The integration examples below show caller-owned `HttpClient`, update checks, asset selection, safe downloading, verification, and reusable desktop UI.
 
 ## Supported platforms
 
@@ -160,7 +160,7 @@ var dialogOptions = new UpdateDialogOptions(
     client,
     currentVersion,
     destinationPath,
-    release => client.SelectAssetByExtension(release, ".zip"))
+    release => client.SelectAssetByExtension(release, ".nupkg"))
 {
     Theme = ApplicationTheme.System, // Or Light or Dark.
     ConfirmBeforeDownload = true,
@@ -224,8 +224,8 @@ internal sealed class MainForm : Form
     private const string RepositoryOwner = "uzemvezeto8111"; // CHANGE THIS.
     private const string RepositoryName = "UpdateKit"; // CHANGE THIS.
     private const string CurrentVersion = "0.0.0"; // CHANGE THIS to your installed version.
-    private const string AssetExtension = ".nupkg"; // CHANGE THIS to your release asset type.
-    private static readonly string DestinationPath = // CHANGE THIS to your installer/package path.
+    private const string AssetExtension = ".nupkg"; // CHANGE THIS; .exe, .msi, or .tar.gz also work.
+    private static readonly string DestinationPath = // CHANGE THIS to your downloaded-file path or existing directory.
         Path.Combine(Path.GetTempPath(), "UpdateKit.Minimal.WinForms-update.nupkg");
 
     private readonly HttpClient _httpClient;
@@ -284,6 +284,7 @@ internal sealed class MainForm : Form
             _updateClient,
             CurrentVersion,
             DestinationPath,
+            // For exact-name selection, use SelectAssetByExactName(release, "MyProduct-setup.exe") instead.
             release => _updateClient.SelectAssetByExtension(release, AssetExtension))
         {
             DialogTitle = "Software Update",
@@ -362,14 +363,14 @@ if (!check.Value.IsUpdateAvailable)
     return;
 }
 
-var asset = client.SelectAssetByExtension(check.Value.LatestRelease, ".zip");
+var asset = client.SelectAssetByExtension(check.Value.LatestRelease, ".tar.gz");
 if (!asset.IsSuccess)
 {
     Console.Error.WriteLine(asset.Error.Message);
     return;
 }
 
-var destination = Path.GetFullPath("MyProduct-update.zip");
+var destination = Path.GetFullPath(asset.Value.Name);
 var progress = new Progress<DownloadProgress>(value =>
 {
     var display = value.Percentage is { } percentage
@@ -390,7 +391,9 @@ if (!download.IsSuccess)
 }
 ```
 
-Exact-name and predicate selection are also available through `SelectAssetByExactName` and `SelectAssetByPredicate`. Selection returns the first matching release asset in GitHub response order. Exact names are case-sensitive; extensions are normalized to a leading dot and matched without case sensitivity.
+Exact-name and predicate selection are also available through `SelectAssetByExactName` and `SelectAssetByPredicate`. Selection returns the first matching release asset in GitHub response order. Exact names are case-sensitive; extensions are normalized to a leading dot and matched without case sensitivity. Extensions are suffixes rather than a fixed allowlist, so `.exe`, `msi`, `.nupkg`, `.7z`, and multi-part values such as `.tar.gz` all work. The selected `ReleaseAsset.Name` remains unchanged.
+
+UpdateKit treats every release asset as data. It does not infer trust from the extension, extract archives, install packages, or execute `.exe`, `.msi`, scripts, or any other downloaded file. Host applications decide what happens after a successful download.
 
 ### Download retry contract
 
@@ -442,7 +445,7 @@ var verified = await client.DownloadAndVerifyFromChecksumFileAsync(
     cancellation.Token);
 ```
 
-Checksum files accept standard lines containing a 64-character hexadecimal SHA-256 value, whitespace, an optional `*` binary marker, and a filename. Filename matching is ordinal and case-sensitive. Duplicate identical entries are accepted; conflicting duplicates fail as `InvalidChecksum`. A mismatch returns `ChecksumMismatch` and deletes the downloaded file. If that deletion fails, the operation returns `FileSystemError` and the caller should treat the file as untrusted.
+Checksum files accept standard lines containing a 64-character hexadecimal SHA-256 value, whitespace, an optional `*` binary marker, and a filename. Filename matching is ordinal and case-sensitive. Duplicate identical entries are accepted; conflicting duplicates fail as `InvalidChecksum`. A mismatch returns `ChecksumMismatch` and deletes the downloaded file. If that deletion fails, the operation returns `FileSystemError` and the caller should treat the file as untrusted. A matching SHA-256 value verifies integrity against the expected digest; it does not establish publisher identity or make an untrusted file safe to run.
 
 ## Windows Forms dialog
 
@@ -456,12 +459,13 @@ using UpdateKit.WinForms;
 
 using var httpClient = new HttpClient();
 var client = new UpdateClient(httpClient, clientOptions);
+var existingDownloadDirectory = Path.GetFullPath("downloads"); // Must already exist.
 
 var dialogOptions = new UpdateDialogOptions(
     client,
     currentVersion: "1.2.3",
-    destinationFilePath: Path.GetFullPath("MyProduct-update.zip"),
-    assetSelector: release => client.SelectAssetByExtension(release, ".zip"))
+    destinationFilePath: existingDownloadDirectory,
+    assetSelector: release => client.SelectAssetByExtension(release, ".msi"))
 {
     DialogTitle = "MyProduct Update",
     ChecksumAssetSelector = release =>
@@ -481,7 +485,7 @@ else if (dialog.LastError is { } error)
 }
 ```
 
-Set either `ExpectedSha256` or `ChecksumAssetSelector`, never both. By default the dialog checks when first shown. Set `CheckForUpdateOnShown = false` when the host needs to call `CheckForUpdateAsync` itself. The dialog is single-use, prevents concurrent operations, marshals state to the UI thread, cancels active work before closing, and exposes the final check, selected asset, download, and error results.
+Set either `ExpectedSha256` or `ChecksumAssetSelector`, never both. An explicit destination file path is preserved. When `DestinationFilePath` identifies an existing directory, the dialog appends the selected asset's original filename, including spaces and multi-part extensions. Parent directories must already exist; UpdateKit does not create them. By default the dialog checks when first shown. Set `CheckForUpdateOnShown = false` when the host needs to call `CheckForUpdateAsync` itself. The dialog is single-use, prevents concurrent operations, marshals state to the UI thread, cancels active work before closing, and exposes the final check, selected asset, download, and error results.
 
 ## WPF update window
 
@@ -491,11 +495,13 @@ The WPF package follows the same ownership and host-configuration model. Create 
 using UpdateKit;
 using UpdateKit.Wpf;
 
+var existingDownloadDirectory = Path.GetFullPath("downloads"); // Must already exist.
+
 var windowOptions = new UpdateWindowOptions(
     client,
     currentVersion: "1.2.3",
-    destinationFilePath: Path.GetFullPath("MyProduct-update.zip"),
-    assetSelector: release => client.SelectAssetByExtension(release, ".zip"))
+    destinationFilePath: existingDownloadDirectory,
+    assetSelector: release => client.SelectAssetByExactName(release, "MyProduct-setup.exe"))
 {
     WindowTitle = "MyProduct Update",
     ChecksumAssetSelector = release =>

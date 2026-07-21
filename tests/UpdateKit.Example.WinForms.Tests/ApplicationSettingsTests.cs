@@ -55,19 +55,36 @@ public sealed class ApplicationSettingsTests
             RepositoryOwner = "owner",
             RepositoryName = "repository",
             AssetSelectionMode = SampleAssetSelectionMode.ExactName,
-            AssetSelectionValue = "asset.zip",
+            AssetSelectionValue = "asset.msi",
             LastDestinationDirectory = directory.Path,
         };
 
-        var state = MainFormSettingsMapper.ToFormState(settings, "download.zip");
+        var state = MainFormSettingsMapper.ToFormState(settings);
 
         Assert.Equal("owner", state.RepositoryOwner);
         Assert.Equal("repository", state.RepositoryName);
         Assert.True(state.IncludePrereleases);
         Assert.Equal(SampleAssetSelectionMode.ExactName, state.AssetSelectionMode);
-        Assert.Equal("asset.zip", state.AssetSelectionValue);
-        Assert.Equal(Path.Combine(directory.Path, "download.zip"), state.DestinationFilePath);
+        Assert.Equal("asset.msi", state.AssetSelectionValue);
+        Assert.Equal(directory.Path, state.DestinationFilePath);
         Assert.DoesNotContain("token", JsonSerializer.Serialize(settings), StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void Mapper_DefaultsToGenericNonZipSelectionAndExistingDirectory()
+    {
+        using var directory = new TemporaryDirectory();
+        var settings = ApplicationSettings.CreateDefaults(directory.Path) with
+        {
+            RememberAssetSelection = false,
+            RememberDestinationDirectory = false,
+        };
+
+        var state = MainFormSettingsMapper.ToFormState(settings);
+
+        Assert.Equal(SampleAssetSelectionMode.Extension, state.AssetSelectionMode);
+        Assert.Equal(".nupkg", state.AssetSelectionValue);
+        Assert.Equal(directory.Path, state.DestinationFilePath);
     }
 
     [Fact]

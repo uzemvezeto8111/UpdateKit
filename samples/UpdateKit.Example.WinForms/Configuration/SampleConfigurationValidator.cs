@@ -57,7 +57,13 @@ internal static class SampleConfigurationValidator
             input.AssetSelectionMode,
             assetSelectionValue,
             errors);
-        ValidateDestination(destinationFilePath, errors);
+        if (!SampleDestinationPath.TryNormalize(
+                destinationFilePath,
+                out var normalizedDestinationPath,
+                out var destinationError))
+        {
+            errors.Add(destinationError!);
+        }
         ValidateVerification(
             input.VerificationMode,
             verificationValue,
@@ -82,7 +88,7 @@ internal static class SampleConfigurationValidator
                 input.IncludePrereleases,
                 input.AssetSelectionMode,
                 assetSelectionValue,
-                Path.GetFullPath(destinationFilePath),
+                normalizedDestinationPath,
                 input.VerificationMode,
                 verificationValue,
                 input.MaximumRetryAttempts,
@@ -109,48 +115,6 @@ internal static class SampleConfigurationValidator
         if (!result.IsSuccess && result.Error.Code == UpdateErrorCode.InvalidConfiguration)
         {
             errors.Add($"Asset selection: {result.Error.Message}");
-        }
-    }
-
-    private static void ValidateDestination(
-        string destinationFilePath,
-        ICollection<string> errors)
-    {
-        if (string.IsNullOrWhiteSpace(destinationFilePath))
-        {
-            errors.Add("A destination file path is required.");
-            return;
-        }
-
-        if (!Path.IsPathFullyQualified(destinationFilePath))
-        {
-            errors.Add("The destination file path must be fully qualified.");
-            return;
-        }
-
-        try
-        {
-            var fullPath = Path.GetFullPath(destinationFilePath);
-            var fileName = Path.GetFileName(fullPath);
-            var directory = Path.GetDirectoryName(fullPath);
-
-            if (Path.EndsInDirectorySeparator(fullPath) ||
-                Directory.Exists(fullPath) ||
-                string.IsNullOrWhiteSpace(fileName) ||
-                fileName.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0 ||
-                fileName[^1] is '.' or ' ')
-            {
-                errors.Add("The destination must be a valid file path, not a directory.");
-            }
-            else if (directory is null || !Directory.Exists(directory))
-            {
-                errors.Add("The destination directory does not exist.");
-            }
-        }
-        catch (Exception exception) when (
-            exception is ArgumentException or IOException or NotSupportedException)
-        {
-            errors.Add("The destination file path is invalid.");
         }
     }
 
